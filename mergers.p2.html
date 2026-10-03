@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isar Synergy | Post-Merger Dashboard</title>
+<style>
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; background: #050507; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+        body { background: #050507; min-height: 100vh; display: flex; align-items: center; justify-content: center; color: #fff; }
+        .phone-frame { width: 390px; height: 844px; background: #09090B; border-radius: 44px; border: 4px solid #27272A; overflow: hidden; display: flex; flex-direction: column; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); }
+        .header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1E1E24; background: #09090B; z-index: 10; }
+        .content { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; scrollbar-width: none; }
+        .content::-webkit-scrollbar { display: none; }
+        .card { background: #121216; border: 1px solid #1E1E24; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; position: relative; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        .nav-bar { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(16px); border-top: 1px solid #1E1E24; padding: 12px 20px 24px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 20; }
+        .nav-btn { background: transparent; border: none; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; color: #71717A; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        .nav-btn.active { color: #00FF85; transform: scale(1.05); }
+        .account-row { background: #121216; border: 1px solid #1E1E24; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; transition: transform 0.15s ease, background 0.15s ease; cursor: pointer; }
+        .account-row:active { transform: scale(0.97); background: #18181B; }
+        .dropdown-menu { position: absolute; top: 65px; right: 15px; background: #18181B; border: 1px solid #27272A; border-radius: 16px; padding: 8px; z-index: 50; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.8); width: 220px; display: none; animation: fadeIn 0.15s ease; }
+        .dropdown-menu.open { display: block; }
+        .dropdown-item { width: 100%; background: transparent; border: none; border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #fff; font-size: 12px; transition: background 0.1s; }
+        .dropdown-item:hover, .dropdown-item.active { background: #27272A; color: #00FF85; font-weight: 700; }
+        .tab-panel { display: none; flex-direction: column; gap: 16px; animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        .tab-panel.active { display: flex; }
+        .interactive-btn { transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s; cursor: pointer; }
+        .interactive-btn:active { transform: scale(0.95); opacity: 0.8; }
+
+        /* Live-rates refresh feedback */
+        @keyframes refreshSpin { to { transform: rotate(360deg); } }
+        @keyframes softPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+        @keyframes statusSwap { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes valueRefresh { 0% { opacity: 0.3; transform: translateY(5px); filter: blur(2px); } 100% { opacity: 1; transform: translateY(0); filter: blur(0); } }
+        .rates-btn { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: #18181B; border: 1px solid #27272A; color: #00FF85; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease; }
+        .rates-btn:hover { border-color: #00FF85; }
+        .rates-btn:active { transform: scale(0.92); }
+        .rates-btn.refreshing { pointer-events: none; border-color: #00FF85; background: rgba(0, 255, 133, 0.08); }
+        .rates-icon { display: flex; align-items: center; justify-content: center; }
+        .rates-btn.refreshing .rates-icon { animation: refreshSpin 0.9s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
+        .pulsing { animation: softPulse 1.1s ease-in-out infinite; }
+        .status-swap { animation: statusSwap 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+        .value-refresh { animation: valueRefresh 0.55s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        /* Performance detail screen */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .stat-tile { background: #121216; border: 1px solid #1E1E24; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+        .stat-tile-label { font-size: 10px; color: #71717A; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+        .stat-tile-value { font-size: 15px; font-weight: 800; }
+        .stat-tile-sub { font-size: 10px; color: #71717A; }
+        .perf-timeframe-btn { flex: 1; padding: 7px 0; border-radius: 9px; font-size: 11px; cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+        #perf-graph-svg { touch-action: none; }
+        #perf-guide, #perf-guide-y, #perf-dot { transition: opacity 0.12s ease; }
+        @media (prefers-reduced-motion: reduce) {
+            .rates-btn.refreshing .rates-icon, .pulsing, .status-swap, .value-refresh { animation: none; }
+        }
+        
+        /* Apple Wallet Stack Styles */
+        .wallet-container { position: relative; height: 190px; width: 100%; margin-top: 4px; }
+        .wallet-card { position: absolute; width: 100%; height: 140px; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 25px rgba(0,0,0,0.5); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Account & Settings screen */
+        .profile-screen, .account-screen, .perf-screen { position: absolute; inset: 0; background: #09090B; z-index: 60; display: none; flex-direction: column; }
+        .profile-screen.open, .account-screen.open, .perf-screen.open { display: flex; animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        .section-label { font-size: 12px; font-weight: 600; color: #71717A; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .settings-group { background: #121216; border: 1px solid #1E1E24; border-radius: 16px; overflow: hidden; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #1E1E24; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s ease; }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row:active { background: #18181B; }
+        .row-label { display: flex; align-items: center; gap: 10px; }
+        .row-icon { width: 28px; height: 28px; border-radius: 8px; background: #1E1E24; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+        .row-value { font-size: 12px; color: #71717A; font-weight: 500; }
+        .toggle { width: 40px; height: 24px; border-radius: 12px; background: #27272A; position: relative; transition: background 0.2s ease; flex-shrink: 0; }
+        .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #71717A; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease; }
+        .toggle.on { background: rgba(0, 255, 133, 0.25); }
+        .toggle.on::after { transform: translateX(16px); background: #00FF85; }
+
+        /* ---- Isar Synergy additions ---- */
+        .phone-frame { flex-shrink: 0; transform-origin: center center; }
+        .status-bar { height: 44px; padding: 14px 28px 0; display: flex; justify-content: space-between; align-items: flex-start; font-size: 12px; font-weight: 700; position: relative; flex-shrink: 0; background: #09090B; }
+        .island { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); width: 104px; height: 28px; border-radius: 16px; background: #000; border: 1px solid #1E1E24; }
+        .header { padding: 6px 20px 14px; }
+        .content { padding-bottom: 104px; }
+        .profile-screen, .account-screen, .perf-screen { top: 44px; }
+        .nav-bar { padding: 10px 6px 26px; }
+        .nav-btn { position: relative; flex: 1; }
+        .home-ind { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 2px; background: #3F3F46; }
+        .badge { position: absolute; top: -5px; left: calc(50% + 6px); min-width: 16px; height: 16px; border-radius: 8px; background: #FF4D6D; color: #fff; font-size: 9px; font-weight: 800; display: none; align-items: center; justify-content: center; padding: 0 4px; }
+        .h2 { font-size: 14px; font-weight: 700; }
+        .note { font-size: 11px; color: #71717A; line-height: 1.4; margin-top: -8px; }
+        .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+        .chip { flex: none; padding: 7px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; background: #18181B; border: 1px solid #27272A; color: #fff; cursor: pointer; }
+        .chip.on { border-color: #00FF85; color: #00FF85; background: #27272A; }
+        .chat-log { display: flex; flex-direction: column; gap: 10px; height: 340px; overflow-y: auto; scrollbar-width: none; padding: 2px; }
+        .bub-wrap { display: flex; flex-direction: column; max-width: 84%; align-self: flex-start; }
+        .bub-wrap.me { align-self: flex-end; align-items: flex-end; }
+        .bub-name { font-size: 9px; font-weight: 700; margin-bottom: 3px; }
+        .bub { background: #1E1E24; padding: 9px 12px; border-radius: 16px 16px 16px 4px; font-size: 12.5px; line-height: 1.4; }
+        .me .bub { background: #00FF85; color: #000; border-radius: 16px 16px 4px 16px; font-weight: 500; }
+        .sysmsg { align-self: center; font-size: 10px; color: #A1A1AA; background: #18181B; border: 1px solid #27272A; border-radius: 10px; padding: 4px 10px; text-align: center; max-width: 92%; }
+        .typing { font-size: 10px; color: #71717A; min-height: 12px; }
+        .inp { flex: 1; min-width: 0; background: #18181B; border: 1px solid #27272A; border-radius: 12px; padding: 10px 12px; color: #fff; font-size: 13px; outline: none; }
+        .inp:focus { border-color: #00FF85; }
+        .go, .solid { background: #00FF85; color: #000; border: none; border-radius: 12px; padding: 10px 16px; font-size: 12px; font-weight: 800; }
+        .ghost { background: #18181B; color: #fff; border: 1px solid #27272A; border-radius: 12px; padding: 10px 14px; font-size: 12px; font-weight: 700; }
+        .ghost.bad { color: #FF4D6D; border-color: #3F1D24; }
+        .solid, .ghost { flex: 1; }
+        .meta { font-size: 10px; color: #71717A; font-weight: 600; }
+        .ttl { font-size: 13px; font-weight: 700; line-height: 1.35; }
+        .desc { font-size: 11px; color: #A1A1AA; line-height: 1.45; }
+        .tag, .key { font-size: 10px; font-weight: 700; border: 1px solid #27272A; border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
+        .row { display: flex; align-items: center; } .sb { justify-content: space-between; gap: 8px; }
+        .seat { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #3F3F46; }
+        .split { display: flex; height: 8px; border-radius: 8px; overflow: hidden; gap: 2px; } .split i { display: block; height: 100%; }
+        .ms { display: flex; gap: 10px; align-items: center; font-size: 12px; padding: 8px 0; border-top: 1px solid #1E1E24; cursor: pointer; }
+        .ck { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid #3F3F46; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #000; font-weight: 800; flex-shrink: 0; }
+        .pbar { height: 6px; border-radius: 6px; background: #1E1E24; } .pbar i { display: block; height: 100%; border-radius: 6px; transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @media (max-width: 500px) { .phone-frame { width: 100vw !important; height: 100dvh !important; border: none !important; border-radius: 0 !important; } .island { display: none; } }
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <div class="status-bar"><span id="sb-time">9:41</span><div class="island"></div><span>5G ▮▮▮ 🔋</span></div>
+        <!-- Header -->
+        <div class="header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: #00FF85; box-shadow: 0 0 8px #00FF85;"></div>
+                <span style="font-size: 18px; font-weight: 800; letter-spacing: -0.5px;">Isar</span><span style="font-size: 10px; font-weight: 700; color: #00FF85; border: 1px solid #27272A; background: #18181B; border-radius: 10px; padding: 2px 8px;">Synergy</span>
+            </div>
+            <button id="user-avatar" onclick="openProfile()" class="interactive-btn" title="Account &amp; settings" style="width: 32px; height: 32px; border-radius: 50%; background: #1E1E24; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; border: 1px solid #27272A; color: #fff; padding: 0;"></button>
+        </div>
+
+        <!-- Scrollable Content Area -->
+        <div class="content">
+            
+            <!-- Net Worth Card -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; color: #71717A; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Combined Annualised Revenue</span>
+                    
+                    <button onclick="toggleCurrencyMenu()" id="curr-btn" class="interactive-btn" style="background: #18181B; border: 1px solid #27272A; border-radius: 20px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; color: #fff; font-size: 12px; font-weight: 600;">
+                        <span id="curr-label">AUD 🇦🇺</span>
+                        <span style="font-size: 9px; color: #00FF85;">▼</span>
+                    </button>
+                </div>
+
+                <div id="balance-display" style="font-size: 32px; font-weight: 800; letter-spacing: -1px;">…</div>
+                <div id="balance-subtext" style="font-size: 11px; color: #00FF85; font-weight: 500;"></div>
+                <div id="role-chips" style="display: flex; gap: 6px; margin-top: 2px;"></div>
+
+                <!-- Currency Dropdown Overlay -->
+                <div id="curr-menu" class="dropdown-menu">
+                    <div style="font-size: 10px; color: #71717A; padding: 4px 8px; text-transform: uppercase; font-weight: 700;">View in Currency</div>
+                    <div id="curr-items"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 8px 2px 8px; border-top: 1px solid #27272A; margin-top: 4px;">
+                        <div id="rates-status" style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                            <span id="rates-status-text" style="font-size: 9px; color: #71717A; font-weight: 600;">Loading live rates…</span>
+                            <span id="rates-status-sub" style="font-size: 9px; color: #71717A;"></span>
+                        </div>
+                        <button id="rates-refresh-btn" class="rates-btn" onclick="event.stopPropagation(); fetchLiveRates(true);" title="Refresh rates">
+                            <span class="rates-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: ACCOUNTS -->
+            <div id="panel-accounts" class="tab-panel active">
+                <div style="font-size: 13px; color: #71717A; line-height: 1.4;">Welcome back,<br><strong id="welcome-name" style="font-size: 20px; color: #fff; font-weight: 700;"></strong></div>
+                
+                <!-- Performance Graph Card with Timeline Selector -->
+                <div class="card" style="padding: 16px; gap: 8px; cursor: pointer;" onclick="openPerformance()">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #71717A;">
+                        <span id="timeframe-title">Performance (6 Months)</span>
+                        <span style="color: #00FF85; font-weight: 600; display: flex; align-items: center; gap: 4px;"><span id="timeframe-pct">…</span> <span style="font-size: 13px; color: #71717A;">›</span></span>
+                    </div>
+
+                    <svg id="graph-svg" viewBox="0 0 320 70" preserveAspectRatio="none" style="width: 100%; height: 60px; overflow: visible; color: #00FF85;">
+                        <defs>
+                            <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="currentColor" stop-opacity="0.25"/>
+                                <stop offset="100%" stop-color="currentColor" stop-opacity="0.0"/>
+                            </linearGradient>
+                        </defs>
+                        <path id="graph-line" d="" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+                        <path id="graph-area" d="" fill="url(#grad)"/>
+                    </svg>
+                    <div id="graph-empty" style="display: none; font-size: 11px; color: #71717A; text-align: center; padding: 18px 0;">Not enough history to draw a graph</div>
+                    <div id="graph-labels" style="display: flex; justify-content: space-between; font-size: 9px; color: #71717A; padding-top: 2px;"></div>
+                </div>
+                <div id="gov-box" style="display: flex; flex-direction: column; gap: 16px;"></div>
+                <div id="uplift-box" style="display: flex; flex-direction: column; gap: 16px;"></div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size: 12px; font-weight: 600; color: #71717A; text-transform: uppercase; letter-spacing: 0.5px;">Business Units</span>
+                        <button onclick="toggleAccounts()" id="accounts-toggle-btn" class="interactive-btn" style="background: #18181B; border: 1px solid #27272A; color: #00FF85; font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                            <span id="toggle-icon">+</span> <span id="toggle-text"></span>
+                        </button>
+                    </div>
+                    
+                    <!-- Always visible 4 accounts -->
+                    <div id="visible-accounts"></div>
+
+                    <!-- Hidden accounts revealed via toggle button -->
+                    <div id="extra-accounts" style="display: none; flex-direction: column; gap: 8px; margin-top: 8px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: CHAT -->
+            <div id="panel-chat" class="tab-panel">
+                <span class="h2">Messages</span>
+                <div id="chan-chips" class="chips"></div>
+                <div class="card" style="padding: 12px; gap: 8px;">
+                    <div id="chat-log" class="chat-log"></div>
+                    <div id="chat-typing" class="typing"></div>
+                    <div class="row" style="gap: 8px;"><input id="chat-input" class="inp" placeholder="Message the channel…" onkeydown="if(event.key==='Enter')sendChat()"><button class="go interactive-btn" onclick="sendChat()">Send</button></div>
+                </div>
+            </div>
+
+            <!-- TAB 3: REQUESTS -->
+            <div id="panel-requests" class="tab-panel">
+                <span class="h2">Company move requests</span>
+                <div class="note">Merger of equals rule: every move needs sign-off from both sides. The Joint Board can step in as the tie-breaker.</div>
+                <div id="req-summary" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"></div>
+                <button class="interactive-btn ghost" style="flex: none;" onclick="toggleNewReq()">+ New request</button>
+                <div id="new-req" class="card" style="display: none; gap: 10px;">
+                    <input id="nr-t" class="inp" placeholder="What do you want to do?">
+                    <div class="row" style="gap: 8px;"><select id="nr-ty" class="inp"><option>Hiring</option><option>Procurement</option><option>Capex</option><option>Facilities</option><option>Technology</option><option>Intercompany funding</option><option>Brand</option></select><input id="nr-a" class="inp" type="number" min="0" step="0.1" placeholder="A$M" style="max-width: 84px; flex: none;"></div>
+                    <button class="interactive-btn solid" style="width: 100%; flex: none;" onclick="newReq()">Submit for approval</button>
+                </div>
+                <div id="req-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+
+            <!-- TAB 4: VOTES -->
+            <div id="panel-votes" class="tab-panel">
+                <span class="h2">Board resolutions</span>
+                <div class="note">Double majority: each side has 4 seats and needs 3 For to carry its half. A resolution passes only when both sides carry.</div>
+                <div id="vote-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+
+            <!-- TAB 5: ROADMAP -->
+            <div id="panel-plan" class="tab-panel">
+                <span class="h2">Integration roadmap</span>
+                <div id="plan-top"></div>
+                <div id="plan-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                <div id="culture-box"></div>
+                <div id="synergy-box" style="display: flex; flex-direction: column; gap: 16px;"></div>
+            </div>
+
+        </div>
+
+        <!-- Bottom Navigation Bar -->
+        <div class="nav-bar">
+            <button class="nav-btn active interactive-btn" onclick="switchTab('accounts', this)" id="btn-accounts"><span>🏠</span><span style="font-size: 10px;">Overview</span></button>
+            <button class="nav-btn interactive-btn" onclick="switchTab('chat', this)" id="btn-chat"><span>💬</span><span style="font-size: 10px;">Chat</span></button>
+            <button class="nav-btn interactive-btn" onclick="switchTab('requests', this)" id="btn-requests"><span>📝</span><span style="font-size: 10px;">Requests</span><span class="badge" id="bd-requests"></span></button>
+            <button class="nav-btn interactive-btn" onclick="switchTab('votes', this)" id="btn-votes"><span>🗳️</span><span style="font-size: 10px;">Votes</span><span class="badge" id="bd-votes"></span></button>
+            <button class="nav-btn interactive-btn" onclick="switchTab('plan', this)" id="btn-plan"><span>🧭</span><span style="font-size: 10px;">Roadmap</span></button>
+            <div class="home-ind"></div>
+        </div>
+
+        <!-- Performance detail screen (opened by tapping the Performance card) -->
+        <div id="perf-screen" class="perf-screen">
+            <div class="header">
+                <button onclick="closePerformance()" class="interactive-btn" title="Back" style="width: 32px; height: 32px; border-radius: 50%; background: #18181B; border: 1px solid #27272A; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; padding-bottom: 2px;">‹</button>
+                <span style="font-size: 15px; font-weight: 700;">Performance</span>
+                <div style="width: 32px;"></div>
+            </div>
+
+            <div class="content" id="perf-content" style="padding-bottom: 24px;">
+
+                <!-- Summary: total value and change for the selected window (or a scrubbed point) -->
+                <div class="card" style="gap: 4px;">
+                    <span id="perf-asof" style="font-size: 11px; color: #71717A;"></span>
+                    <span id="perf-total" style="font-size: 28px; font-weight: 800; letter-spacing: -1px;"></span>
+                    <span id="perf-change" style="font-size: 12px; font-weight: 600;"></span>
+                </div>
+
+                <!-- Timeframe -->
+                <div id="perf-timeframes" style="display: flex; gap: 6px;"></div>
+
+                <!-- Big graph: drag or tap to inspect a point (touch); hover shows a crosshair + tooltip (mouse) -->
+                <div class="card" style="padding: 16px; gap: 6px; position: relative;">
+                    <svg id="perf-graph-svg" viewBox="0 0 320 150" preserveAspectRatio="none" style="width: 100%; height: 130px; overflow: visible; color: #00FF85;">
+                        <defs>
+                            <linearGradient id="grad-perf" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="currentColor" stop-opacity="0.25"/>
+                                <stop offset="100%" stop-color="currentColor" stop-opacity="0.0"/>
+                            </linearGradient>
+                        </defs>
+                        <path id="perf-graph-area" d="" fill="url(#grad-perf)"/>
+                        <path id="perf-graph-line" d="" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+                        <line id="perf-guide" x1="0" y1="0" x2="0" y2="150" stroke="#71717A" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>
+                        <line id="perf-guide-y" x1="0" y1="0" x2="320" y2="0" stroke="#71717A" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>
+                        <circle id="perf-dot" cx="0" cy="0" r="4" fill="currentColor" stroke="#09090B" stroke-width="2" opacity="0"/>
+                    </svg>
+                    <div id="perf-tooltip" style="position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; transition: opacity 0.12s ease; background: #18181B; border: 1px solid #27272A; border-radius: 10px; padding: 6px 10px; font-size: 11px; white-space: nowrap; box-shadow: 0 8px 20px rgba(0,0,0,0.5); z-index: 5; transform: translate(-50%, -125%);">
+                        <div id="perf-tooltip-date" style="color: #71717A; font-size: 9px; font-weight: 600; margin-bottom: 2px;"></div>
+                        <div id="perf-tooltip-value" style="color: #fff; font-weight: 800;"></div>
+                    </div>
+                    <div id="perf-graph-empty" style="display: none; font-size: 11px; color: #71717A; text-align: center; padding: 30px 0;">Not enough history to draw a graph</div>
+                    <div id="perf-graph-labels" style="display: flex; justify-content: space-between; font-size: 9px; color: #71717A; padding-top: 2px;"></div>
+                    <div style="font-size: 9px; color: #71717A; text-align: center;">Touch and drag the graph to inspect a point</div>
+                </div>
+
+                <!-- Analytics computed from the visible window -->
+                <div>
+                    <div class="section-label">Window analytics</div>
+                    <div class="stat-grid">
+                        <div class="stat-tile">
+                            <span class="stat-tile-label">Best move</span>
+                            <span class="stat-tile-value" id="perf-best-value" style="color: #00FF85;"></span>
+                            <span class="stat-tile-sub" id="perf-best-sub"></span>
+                        </div>
+                        <div class="stat-tile">
+                            <span class="stat-tile-label">Worst move</span>
+                            <span class="stat-tile-value" id="perf-worst-value" style="color: #FF4D6D;"></span>
+                            <span class="stat-tile-sub" id="perf-worst-sub"></span>
+                        </div>
+                        <div class="stat-tile">
+                            <span class="stat-tile-label">Max drawdown</span>
+                            <span class="stat-tile-value" id="perf-drawdown-value"></span>
+                            <span class="stat-tile-sub" id="perf-drawdown-sub"></span>
+                        </div>
+                        <div class="stat-tile">
+                            <span class="stat-tile-label">Typical swing</span>
+                            <span class="stat-tile-value" id="perf-vol-value"></span>
+                            <span class="stat-tile-sub">per snapshot, ±1 std dev</span>
+                        </div>
+                        <div class="stat-tile">
+                            <span class="stat-tile-label">Snapshots up / down</span>
+                            <span class="stat-tile-value" id="perf-updown-value"></span>
+                            <span class="stat-tile-sub" id="perf-updown-sub"></span>
+                        </div>
+                        <div class="stat-tile">
+                            <span class="stat-tile-label">Annualized</span>
+                            <span class="stat-tile-value" id="perf-annualized-value"></span>
+                            <span class="stat-tile-sub">est., compounded over the window</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Per-account contribution to the change over the window -->
+                <div>
+                    <div class="section-label">Top contributors this window</div>
+                    <div class="settings-group" id="perf-contrib"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Account detail screen (opened by tapping an account row; sits inside the phone frame) -->
+        <div id="account-screen" class="account-screen">
+            <div class="header">
+                <button onclick="closeAccount()" class="interactive-btn" title="Back" style="width: 32px; height: 32px; border-radius: 50%; background: #18181B; border: 1px solid #27272A; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; padding-bottom: 2px;">‹</button>
+                <span id="acct-title" style="font-size: 15px; font-weight: 700;"></span>
+                <div style="width: 32px;"></div>
+            </div>
+
+            <div class="content" id="account-content" style="padding-bottom: 24px;">
+
+                <!-- Balance card -->
+                <div class="card" style="align-items: center; text-align: center; gap: 6px;">
+                    <div id="acct-badge" style="width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px;"></div>
+                    <div id="acct-name" style="font-size: 16px; font-weight: 700; margin-top: 4px;"></div>
+                    <div id="acct-type" style="font-size: 12px; color: #71717A;"></div>
+
+                    <!-- View this account in a different currency. Uses live exchange rates but is
+                         never saved: it resets to the account's own currency each time it's opened. -->
+                    <div style="position: relative; display: inline-block; margin-top: 4px;">
+                        <button onclick="toggleAcctCurrencyMenu()" id="acct-curr-btn" class="interactive-btn" style="background: #18181B; border: 1px solid #27272A; border-radius: 20px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; color: #fff; font-size: 12px; font-weight: 600;">
+                            <span id="acct-curr-label">AUD 🇦🇺</span>
+                            <span style="font-size: 9px; color: #00FF85;">▼</span>
+                        </button>
+                        <div id="acct-curr-menu" class="dropdown-menu" style="position: absolute; top: calc(100% + 6px); left: 50%; right: auto; transform: translateX(-50%); width: 180px;">
+                            <div style="font-size: 10px; color: #71717A; padding: 4px 8px; text-transform: uppercase; font-weight: 700;">View in Currency</div>
+                            <div id="acct-curr-items"></div>
+                        </div>
+                    </div>
+
+                    <div id="acct-balance" style="font-size: 28px; font-weight: 800; letter-spacing: -1px; margin-top: 8px;"></div>
+                    <div id="acct-converted" style="font-size: 12px; color: #71717A;"></div>
+                </div>
+
+                <!-- Balance history for this account -->
+                <div class="card" style="padding: 16px; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #71717A;">
+                        <span id="acct-graph-title">Balance</span>
+                        <span style="color: #00FF85; font-weight: 600;"><span id="acct-graph-pct">…</span></span>
+                    </div>
+                    <div id="acct-timeframes" style="display: flex; gap: 6px;"></div>
+                    <svg id="acct-graph-svg" viewBox="0 0 320 70" preserveAspectRatio="none" style="width: 100%; height: 60px; overflow: visible; color: #00FF85;">
+                        <defs>
+                            <linearGradient id="grad-acct" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="currentColor" stop-opacity="0.25"/>
+                                <stop offset="100%" stop-color="currentColor" stop-opacity="0.0"/>
+                            </linearGradient>
+                        </defs>
+                        <path id="acct-graph-line" d="" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+                        <path id="acct-graph-area" d="" fill="url(#grad-acct)"/>
+                    </svg>
+                    <div id="acct-graph-empty" style="display: none; font-size: 11px; color: #71717A; text-align: center; padding: 18px 0;">Not enough history to draw a graph</div>
+                    <div id="acct-graph-labels" style="display: flex; justify-content: space-between; font-size: 9px; color: #71717A; padding-top: 2px;"></div>
+                    <div id="acct-graph-note" style="font-size: 9px; color: #71717A;"></div>
+                </div>
+
+                <!-- Details -->
+                <div>
+                    <div class="section-label">Details</div>
+                    <div class="settings-group">
+                        <div class="settings-row" style="cursor: default;">
+                            <span class="row-label"><span class="row-icon">🏦</span>Business line</span>
+                            <span class="row-value" id="acct-detail-type"></span>
+                        </div>
+                        <div class="settings-row" style="cursor: default;">
+                            <span class="row-label"><span class="row-icon">💱</span>Currency</span>
+                            <span class="row-value" id="acct-detail-currency"></span>
+                        </div>
+                        <div class="settings-row" style="cursor: default;">
+                            <span class="row-label"><span class="row-icon">📊</span>Share of combined revenue</span>
+                            <span class="row-value" id="acct-detail-share"></span>
+                        </div>
+                        <div class="settings-row">
+                            <span class="row-label"><span class="row-icon">⚙️</span>Unit settings</span>
+                            <span class="row-value">›</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account & Settings screen (opened by tapping the avatar; sits inside the phone frame) -->
+        <div id="profile-screen" class="profile-screen">
+            <div class="header">
+                <button onclick="closeProfile()" class="interactive-btn" title="Back" style="width: 32px; height: 32px; border-radius: 50%; background: #18181B; border: 1px solid #27272A; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; padding-bottom: 2px;">‹</button>
+                <span style="font-size: 15px; font-weight: 700;">Account</span>
+                <div style="width: 32px;"></div>
+            </div>
+
+            <div class="content" id="profile-content" style="padding-bottom: 24px;">
+
+                <!-- Profile card -->
+                <div class="card" style="align-items: center; text-align: center; gap: 6px;">
+                    <div id="profile-avatar" style="width: 72px; height: 72px; border-radius: 50%; background: #1E1E24; border: 2px solid #00FF85; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; box-shadow: 0 0 18px rgba(0, 255, 133, 0.25);"></div>
+                    <div id="profile-name" style="font-size: 18px; font-weight: 700; margin-top: 6px;"></div>
+                    <div id="profile-email" style="font-size: 12px; color: #71717A;"></div>
+                    <div id="profile-since" style="font-size: 10px; color: #00FF85; background: #18181B; border: 1px solid #27272A; border-radius: 12px; padding: 3px 10px; margin-top: 4px; font-weight: 600;"></div>
+                </div>
+
+                <!-- Account -->
+                <div>
+                    <div class="section-label">Account</div>
+                    <div class="settings-group">
+                        <div class="settings-row">
+                            <span class="row-label"><span class="row-icon">👤</span>Personal details</span>
+                            <span class="row-value">›</span>
+                        </div>
+                        <div class="settings-row" onclick="goToLinkedAccounts()">
+                            <span class="row-label"><span class="row-icon">🗳️</span>Open votes</span>
+                            <span class="row-value"><span id="profile-linked-count"></span> ›</span>
+                        </div>
+                        <div class="settings-row" onclick="toggleSetting('faceIdLock')">
+                            <span class="row-label"><span class="row-icon">🔒</span>Face ID lock</span>
+                            <div class="toggle" data-setting="faceIdLock"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preferences -->
+                <div>
+                    <div class="section-label">Preferences</div>
+                    <div class="settings-group">
+                        <div class="settings-row" style="flex-direction: column; align-items: stretch; cursor: default;">
+                            <span class="row-label"><span class="row-icon">🏛️</span>Viewing as</span>
+                            <div id="profile-role" style="display: flex; gap: 6px;"></div>
+                        </div>
+                        <div class="settings-row" style="flex-direction: column; align-items: stretch; cursor: default;">
+                            <span class="row-label"><span class="row-icon">💱</span>Display currency</span>
+                            <div id="profile-currency" style="display: flex; gap: 6px;"></div>
+                        </div>
+                        <div class="settings-row" onclick="toggleSetting('notifications')">
+                            <span class="row-label"><span class="row-icon">🔔</span>Notifications</span>
+                            <div class="toggle" data-setting="notifications"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support -->
+                <div>
+                    <div class="section-label">Support</div>
+                    <div class="settings-group">
+                        <div class="settings-row">
+                            <span class="row-label"><span class="row-icon">💬</span>Help &amp; support</span>
+                            <span class="row-value">›</span>
+                        </div>
+                        <div class="settings-row">
+                            <span class="row-label"><span class="row-icon">📄</span>Privacy &amp; terms</span>
+                            <span class="row-value">›</span>
+                        </div>
+                        <div class="settings-row" style="cursor: default;">
+                            <span class="row-label"><span class="row-icon">ℹ️</span>About Isar Synergy</span>
+                            <span class="row-value">v1.0.0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="openSignOutDialog()" class="interactive-btn" style="width: 100%; background: transparent; border: 1px solid #3F1D24; color: #FF4D6D; border-radius: 14px; padding: 14px; font-size: 14px; font-weight: 700;">Sign out</button>
+            </div>
+
+            <!-- Sign-out confirmation -->
+            <div id="signout-dialog" style="display: none; position: absolute; inset: 0; background: rgba(9,9,11,0.85); backdrop-filter: blur(8px); z-index: 5; align-items: center; justify-content: center; padding: 24px;">
+                <div style="background: #121216; border: 1px solid #27272A; border-radius: 24px; padding: 24px; width: 100%; display: flex; flex-direction: column; gap: 16px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.9);">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;">Sign out of Isar?</h3>
+                        <p style="font-size: 12px; color: #A1A1AA; line-height: 1.4;">You'll need to sign in again to see merger performance.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="closeSignOutDialog()" style="flex: 1; background: #27272A; border: none; border-radius: 12px; padding: 12px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+                        <button onclick="confirmSignOut()" style="flex: 1; background: #FF4D6D; border: none; border-radius: 12px; padding: 12px; color: #000; font-size: 13px; font-weight: 700; cursor: pointer;">Sign out</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signed-out state -->
+            <div id="signed-out-view" style="display: none; position: absolute; inset: 0; background: #09090B; z-index: 6; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,255,133,0.15); color: #00FF85; font-size: 22px; display: flex; align-items: center; justify-content: center;">✓</div>
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;">Signed out</h3>
+                    <p style="font-size: 12px; color: #A1A1AA;">See you soon, <span id="signed-out-name"></span>.</p>
+                </div>
+                <button onclick="signBackIn()" class="interactive-btn" style="background: #00FF85; border: none; border-radius: 12px; padding: 12px 24px; color: #000; font-size: 13px; font-weight: 700;">Sign back in</button>
+            </div>
+        </div>
+
+        <!-- Apple-style Secure Modal Overlay (Contained strictly inside phone container) -->
+        <div id="secure-modal" style="display: none; position: absolute; inset: 0; background: rgba(9,9,11,0.85); backdrop-filter: blur(8px); z-index: 100; align-items: center; justify-content: center; padding: 24px;">
+            <div id="modal-content-box" style="background: #121216; border: 1px solid #27272A; border-radius: 24px; padding: 24px; width: 100%; display: flex; flex-direction: column; gap: 16px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.9);">
+                <div id="modal-icon" style="width: 48px; height: 48px; border-radius: 12px; background: #00FF85; color: #000; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin: 0 auto;">C</div>
+                <div>
+                    <h3 id="modal-title" style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;">Securely connect SAP S/4HANA?</h3>
+                    <p id="modal-desc" style="font-size: 12px; color: #A1A1AA; line-height: 1.4;">Isar Synergy uses read-only access to sync revenue and cost data. Each company's data stays in its own workspace.</p>
+                </div>
+                <div id="modal-actions" style="display: flex; gap: 10px;">
+                    <button onclick="closeModal()" style="flex: 1; background: #27272A; border: none; border-radius: 12px; padding: 12px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button onclick="startSecureConnect()" style="flex: 1; background: #00FF85; border: none; border-radius: 12px; padding: 12px; color: #000; font-size: 13px; font-weight: 700; cursor: pointer;">Okay</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+        <script>
+        // Top 40 Global Banks Database Mockup
+        const topBanks = [
+            { name: "SAP S/4HANA", code: "S", color: "#0FAAFF" }, { name: "Oracle NetSuite", code: "O", color: "#C74634" },
+            { name: "Microsoft Dynamics 365", code: "D", color: "#0078D4" }, { name: "Xero", code: "X", color: "#13B5EA" },
+            { name: "MYOB", code: "M", color: "#6B21A8" }, { name: "DATEV", code: "D", color: "#047857" },
+            { name: "Sage Intacct", code: "S", color: "#00A651" }, { name: "QuickBooks", code: "Q", color: "#2CA01C" },
+            { name: "Workday HCM", code: "W", color: "#F59E0B" }, { name: "SAP SuccessFactors", code: "SF", color: "#0A6ED1" },
+            { name: "Salesforce", code: "SF", color: "#00A1E0" }, { name: "SAP Transportation Mgmt", code: "TM", color: "#1D4ED8" },
+            { name: "Project44", code: "P44", color: "#0F766E" }, { name: "Power BI", code: "BI", color: "#F2C811" },
+            { name: "Snowflake", code: "SN", color: "#29B5E8" }
+        ];
+
+        // --- Logged-in user ---
+        // SINGLE SOURCE OF TRUTH for who is signed in. In production this is the
+        // object returned by the login/auth response. Change `name` and everything
+        // follows: the avatar initials (Jared A -> "JA", Marwan Rem -> "MR"), the
+        // "Welcome back" greeting and the Account screen.
+        const USER = {
+            name: 'Jared A',
+            email: 'jared@isarsynergy.com',
+            memberSince: '', role: 'Joint Board'
+        };
+
+        // Preferences on the Account screen (visual only for now; nothing is saved).
+        const USER_SETTINGS = { faceIdLock: true, notifications: true };
+
+        // Initials = first letter of the first word + first letter of the last word.
+        // A one-word name gives one letter.
+        function getInitials(fullName) {
+            const words = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+            if (!words.length) return '?';
+            const first = Array.from(words[0])[0];
+            const last = words.length > 1 ? Array.from(words[words.length - 1])[0] : '';
+            return (first + last).toUpperCase();
+        }
+
+        function getFirstName(fullName) {
+            const words = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+            return words.length ? words[0] : '';
+        }
+
+        // --- Portfolio valuation and currency conversion ---
+
+        // SINGLE SOURCE OF TRUTH for every account and its balance.
+        // To change a balance, edit the `balance` number on that account's line and
+        // nothing else: the Accounts tab, Transfer dropdowns, net-worth total and
+        // currency menu are all generated from this array. `balance` is in the
+        // account's own native currency. In production this would come from the
+        // connected-account API.
+        const ALL_UNITS = [
+            { id: 'atlas-road', co: 'atlas', name: 'Atlas Road & Rail',   type: 'Atlas · Freight',      letter: 'A', color: '#0F766E', balance: 182.4, currency: 'AUD' },
+            { id: 'atlas-sea',  co: 'atlas', name: 'Atlas Maritime',      type: 'Atlas · Shipping',     letter: 'M', color: '#0E7490', balance: 96.8,  currency: 'AUD' },
+            { id: 'atlas-wh',   co: 'atlas', name: 'Atlas Warehousing',   type: 'Atlas · Storage',      letter: 'W', color: '#115E59', balance: 54.2,  currency: 'AUD' },
+            { id: 'nord-rail',  co: 'nord',  name: 'Nordlicht Rail',      type: 'Nordlicht · Freight',  letter: 'N', color: '#5B21B6', balance: 71.5,  currency: 'EUR' },
+            { id: 'nord-last',  co: 'nord',  name: 'Nordlicht Last-Mile', type: 'Nordlicht · Delivery', letter: 'L', color: '#6D28D9', balance: 48.9,  currency: 'EUR' },
+            { id: 'nord-hub',   co: 'nord',  name: 'Nordlicht Hubs',      type: 'Nordlicht · Hubs',     letter: 'H', color: '#4C1D95', balance: 39.6,  currency: 'EUR' }
+        ];
+        let ACCOUNTS = ALL_UNITS.slice();   // the units visible to the signed-in director
+
+        // How many accounts show before the "+ N accounts" toggle is opened.
+        const VISIBLE_ACCOUNT_COUNT = 4;
+
+        // All exchange rates are stored as "1 AUD = X of this currency". This makes
+        // every account comparable: native balance -> AUD -> selected display currency.
+        const BASE_CURRENCY = 'AUD';
+        const EXCHANGE_RATES = {
+            AUD: 1,
+            USD: 0.658,
+            GBP: 0.514,
+            EUR: 0.602
+        };
+
+        const CURRENCY_META = {
+            AUD: { symbol: '$', flag: '🇦🇺' },
+            USD: { symbol: '$', flag: '🇺🇸' },
+            GBP: { symbol: '£', flag: '🇬🇧' },
+            EUR: { symbol: '€', flag: '🇪🇺' }
+        };
+
+
+        // ===== Isar Synergy: merger layer =====
+        // Two companies merged CLOSE_MONTHS_AGO months ago. History is generated here so the file is self-contained:
+        // slow standalone growth before the close, faster growth after it, plus small month-to-month and FX noise.
+        const CLOSE_MONTHS_AGO = 9;
+        const _now = new Date();
+        const CLOSE_T = Date.UTC(_now.getFullYear(), _now.getMonth() - CLOSE_MONTHS_AGO, 1);
+        USER.memberSince = 'Merged since ' + new Date(CLOSE_T).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+        function buildHistory() {
+            const out = [];
+            for (let k = 17; k >= 1; k--) {
+                const iso = new Date(Date.UTC(_now.getFullYear(), _now.getMonth() - k, 1)).toISOString().slice(0, 10);
+                const balances = {};
+                ALL_UNITS.forEach((u, i) => {
+                    const post = Math.min(k, CLOSE_MONTHS_AGO), pre = Math.max(0, k - CLOSE_MONTHS_AGO);
+                    balances[u.id] = +(u.balance * Math.exp(-(0.012 * post + 0.004 * pre)) * (1 + 0.01 * Math.sin(k * 1.7 + i * 2))).toFixed(2);
+                });
+                out.push({ date: iso, balances, rates: {
+                    AUD: 1,
+                    USD: +(0.658 * (1 + 0.02 * Math.sin(k / 2.5))).toFixed(4),
+                    GBP: +(0.514 * (1 + 0.015 * Math.sin(k / 3 + 1))).toFixed(4),
+                    EUR: +(0.602 * (1 + 0.02 * Math.sin(k / 2 + 2))).toFixed(4)
+                } });
+            }
+            return out;
+        }
+        const HISTORY = buildHistory();
+
+        // Synergy programme, in AUD millions. `done` is delivered to date.
+        const SYNERGY = [
+            { n: 'Cost synergies',    plan: 38, done: 25.8, c: '#00FF85' },
+            { n: 'Revenue synergies', plan: 52, done: 21.3, c: '#38BDF8' },
+            { n: 'Integration spend', plan: 45, done: 32.4, c: '#F59E0B' }
+        ];
+
+        // Where would revenue be if the pre-close trend had simply continued?
+        function mergerUplift() {
+            const pts = getHistorySeries(activeCurrency, 'All Time').points;
+            const pre = pts.filter(p => p.t <= CLOSE_T), post = pts.filter(p => p.t > CLOSE_T);
+            if (pre.length < 2 || !post.length) return null;
+            const a = pre[0], b = pre[pre.length - 1], last = post[post.length - 1], mo = t => t / 2629800000;
+            const r = Math.pow(b.value / a.value, 1 / Math.max(1, mo(b.t - a.t))) - 1;
+            const stand = b.value * Math.pow(1 + r, mo(last.t - b.t));
+            return { up: (last.value / stand - 1) * 100, stand, actual: last.value, r: r * 100 };
+        }
+
+        // Directors sign in as their own side; the Joint Board sees both. Same app, different permissions.
+        const ROLES = {
+            joint: { label: 'Joint Board',         chip: 'Combined',  co: null,    cur: 'AUD', name: 'Jared A',      email: 'jared@isarsynergy.com' },
+            atlas: { label: 'Director, Atlas',     chip: 'Atlas',     co: 'atlas', cur: 'AUD', name: 'Mia Hartley',  email: 'mia@atlasfreight.com.au' },
+            nord:  { label: 'Director, Nordlicht', chip: 'Nordlicht', co: 'nord',  cur: 'EUR', name: 'Lukas Brandt', email: 'lukas@nordlicht.de' }
+        };
+        let activeRole = 'joint';
+
+        function renderRoleChips() {
+            const html = Object.keys(ROLES).map(k => {
+                const a = k === activeRole;
+                return '<button class="interactive-btn" onclick="setRole(\'' + k + '\')" style="flex: 1; padding: 7px 0; border-radius: 10px; font-size: 11px; border: 1px solid ' + (a ? '#00FF85' : '#27272A') + '; background: ' + (a ? '#27272A' : '#18181B') + '; color: ' + (a ? '#00FF85' : '#fff') + '; font-weight: ' + (a ? '700' : '600') + ';">' + ROLES[k].chip + '</button>';
+            }).join('');
+            ['role-chips', 'profile-role'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+        }
+
+        function setRole(key) {
+            activeRole = key;
+            const r = ROLES[key];
+            USER.name = r.name; USER.email = r.email; USER.role = r.label;
+            ACCOUNTS = r.co ? ALL_UNITS.filter(x => x.co === r.co) : ALL_UNITS.slice();
+            openAccountId = null;
+            document.getElementById('account-screen').classList.remove('open');
+            document.getElementById('extra-accounts').style.display = 'none';
+            document.getElementById('toggle-icon').innerText = '+';
+            document.getElementById('accounts-toggle-btn').style.display = ACCOUNTS.length > VISIBLE_ACCOUNT_COUNT ? 'flex' : 'none';
+            renderUser();
+            renderAccounts();
+            selectCurrency(r.cur);
+            renderRoleChips();
+            activeChan = 'joint'; renderChat(); renderAll();
+        }
+
+
+        // ===== Merger operations: chat, requests, votes, roadmap =====
+        const $id = id => document.getElementById(id);
+        const SIDE = { atlas: { n: 'Atlas', c: '#2DD4BF' }, nord: { n: 'Nordlicht', c: '#A78BFA' }, joint: { n: 'Joint Board', c: '#00FF85' } };
+        const mySide = () => ROLES[activeRole].co || 'joint';
+        const cvA = x => CURRENCY_META[activeCurrency].symbol + formatMoney(convertFromBase(x, activeCurrency));
+        const hhmm = () => new Date().toTimeString().slice(0, 5);
+        const esc = t => t.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+        const goTab = n => switchTab(n, $id('btn-' + n));
+        const lbl = 'font-size: 11px; color: #71717A; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;';
+
+        // ---- Chat ----
+        const CHANNELS = [
+            { id: 'joint', n: 'Joint Board',        sides: ['joint', 'atlas', 'nord'] },
+            { id: 'io',    n: 'Integration Office', sides: ['joint', 'atlas', 'nord'] },
+            { id: 'atlas', n: 'Atlas only',         sides: ['atlas'] },
+            { id: 'nord',  n: 'Nordlicht only',     sides: ['nord'] }
+        ];
+        const CHAT = {
+            joint: [
+                { u: 'Mia Hartley', s: 'atlas', t: '09:12', m: 'Thanks all. First item: the unified brand vote closes Friday.' },
+                { u: 'Lukas Brandt', s: 'nord', t: '09:15', m: 'Nordlicht supports it, as long as the legacy name winds down over 12 months.' },
+                { s: 'sys', t: '09:20', m: '🗳️ Resolution V-21 is open for voting' },
+                { u: 'Mia Hartley', s: 'atlas', t: '09:22', m: 'Fair. We will keep the 12 months in the resolution text.' }
+            ],
+            io: [
+                { u: 'Priya Nair', s: 'joint', t: '08:40', m: 'Roadmap is on track overall. Technology is the main risk.' },
+                { u: 'Lukas Brandt', s: 'nord', t: '08:46', m: 'We need the shared TMS request approved to unblock the migration team.' }
+            ],
+            atlas: [
+                { u: 'Mia Hartley', s: 'atlas', t: '10:02', m: 'Before Thursday, we hold firm on keeping the Brisbane depot open.' },
+                { u: 'Tom Reid', s: 'atlas', t: '10:05', m: 'Agreed. The cost case is on the shared drive.' }
+            ],
+            nord: [
+                { u: 'Lukas Brandt', s: 'nord', t: '10:10', m: 'The works council wants early notice on any hub changes.' },
+                { u: 'Anke Vogel', s: 'nord', t: '10:14', m: 'I will draft the briefing today.' }
+            ]
+        };
+        const REPLIES = ['Agreed. Let us put it to a vote.', 'Can we see the cost impact before we sign off?', 'Noted. I will loop in my finance lead.', 'Happy to proceed if both sides approve the request.', 'Let us take this offline and report back tomorrow.'];
+        let activeChan = 'joint', replyN = 0;
+
+        function renderChat() {
+            const list = CHANNELS.filter(c => c.sides.includes(mySide()));
+            if (!list.some(c => c.id === activeChan)) activeChan = 'joint';
+            $id('chan-chips').innerHTML = list.map(c => '<button class="chip' + (c.id === activeChan ? ' on' : '') + '" onclick="openChan(\'' + c.id + '\')">' + c.n + '</button>').join('');
+            $id('chat-log').innerHTML = CHAT[activeChan].map(x => x.s === 'sys' ? '<div class="sysmsg">' + x.m + '</div>' :
+                '<div class="bub-wrap' + (x.u === USER.name ? ' me' : '') + '"><div class="bub-name" style="color: ' + SIDE[x.s].c + ';">' + x.u + ' · ' + x.t + '</div><div class="bub">' + x.m + '</div></div>').join('');
+            scrollChat();
+        }
+        function scrollChat() { const l = $id('chat-log'); if (l) l.scrollTop = l.scrollHeight; }
+        function openChan(id) { activeChan = id; $id('chat-typing').textContent = ''; renderChat(); }
+        function sys(text, ch) { (CHAT[ch || 'joint']).push({ s: 'sys', t: hhmm(), m: text }); renderChat(); }
+        function sendChat() {
+            const i = $id('chat-input'), m = i.value.trim(); if (!m) return; i.value = '';
+            const ch = activeChan, me = mySide();
+            CHAT[ch].push({ u: USER.name, s: me, t: hhmm(), m: esc(m) }); renderChat();
+            if (ch === 'atlas' || ch === 'nord') return;
+            const who = me === 'atlas' ? ['Lukas Brandt', 'nord'] : me === 'nord' ? ['Mia Hartley', 'atlas'] : (replyN % 2 ? ['Lukas Brandt', 'nord'] : ['Mia Hartley', 'atlas']);
+            $id('chat-typing').textContent = who[0] + ' is typing…';
+            setTimeout(() => {
+                CHAT[ch].push({ u: who[0], s: who[1], t: hhmm(), m: REPLIES[replyN++ % REPLIES.length] });
+                $id('chat-typing').textContent = ''; renderChat();
+            }, 1500);
+        }
+
+        // ---- Company move requests (both sides must sign) ----
+        let reqN = 105;
+        const REQS = [
+            { id: 'R-101', t: 'Joint freight contract with a shipping line', type: 'Procurement', amt: 6.4, by: 'atlas', k: { atlas: true, nord: null } },
+            { id: 'R-102', t: 'Second 12 Nordlicht depot staff to AU lanes for 6 months', type: 'Hiring', amt: 0.8, by: 'nord', k: { atlas: null, nord: true } },
+            { id: 'R-103', t: 'Merge two Nordlicht hubs into one site', type: 'Facilities', amt: 3.1, by: 'joint', k: { atlas: true, nord: true } },
+            { id: 'R-104', t: 'Intercompany loan from Atlas to Nordlicht fleet renewal', type: 'Intercompany funding', amt: 9.0, by: 'nord', k: { atlas: false, nord: true } }
+        ];
+        const reqStatus = r => (r.k.atlas === false || r.k.nord === false) ? 'Rejected' : (r.k.atlas && r.k.nord) ? 'Approved' : 'Pending';
+        const needsMe = r => { const s = mySide(); return reqStatus(r) === 'Pending' && (s === 'joint' || r.k[s] === null); };
+        function decide(id, ok) {
+            const r = REQS.find(x => x.id === id), s = mySide(), before = reqStatus(r);
+            if (s === 'joint') { r.k.atlas = ok; r.k.nord = ok; } else r.k[s] = ok;
+            const st = reqStatus(r), other = s === 'atlas' ? 'Nordlicht' : 'Atlas';
+            sys(st === 'Pending' ? '📝 ' + SIDE[s].n + ' signed ' + r.id + '. Waiting on ' + other + '.' : (st === 'Approved' ? '✅ ' : '⛔ ') + r.id + ' ' + st.toLowerCase() + (s === 'joint' ? ' by the Joint Board.' : '.'));
+            renderAll();
+        }
+        function toggleNewReq() { const f = $id('new-req'); f.style.display = f.style.display === 'none' ? 'flex' : 'none'; }
+        function newReq() {
+            const t = $id('nr-t').value.trim(), a = +$id('nr-a').value || 0; if (!t) { $id('nr-t').focus(); return; }
+            const s = mySide(), r = { id: 'R-' + (reqN++), t: esc(t), type: $id('nr-ty').value, amt: a, by: s, k: { atlas: s === 'atlas' ? true : null, nord: s === 'nord' ? true : null } };
+            REQS.unshift(r); $id('nr-t').value = ''; $id('nr-a').value = ''; toggleNewReq();
+            sys('📝 New request ' + r.id + ' from ' + SIDE[s].n + ': ' + r.t); renderAll();
+        }
+        function renderRequests() {
+            const need = REQS.filter(needsMe).length, ok = REQS.filter(r => reqStatus(r) === 'Approved').length, val = REQS.filter(r => reqStatus(r) === 'Pending').reduce((t, r) => t + r.amt, 0);
+            $id('req-summary').innerHTML = [['Needs you', need, '#F59E0B'], ['Approved', ok, '#00FF85'], ['Pending value', cvA(val), '#fff']].map(x => '<div class="stat-tile"><span class="stat-tile-label">' + x[0] + '</span><span class="stat-tile-value" style="color: ' + x[2] + '; font-size: 14px;">' + x[1] + '</span></div>').join('');
+            const colr = { Pending: '#F59E0B', Approved: '#00FF85', Rejected: '#FF4D6D' }, b = mySide() === 'joint';
+            const key = (r, s) => { const v = r.k[s], c = v === null ? '#71717A' : v ? '#00FF85' : '#FF4D6D'; return '<span class="key" style="color: ' + c + '; border-color: ' + c + '55;">' + SIDE[s].n + ' ' + (v === null ? '…' : v ? '✓' : '✕') + '</span>'; };
+            $id('req-list').innerHTML = REQS.map(r => { const st = reqStatus(r);
+                return '<div class="card" style="padding: 14px; gap: 8px;"><div class="row sb"><span class="meta">' + r.id + ' · ' + r.type + '</span><span class="tag" style="color: ' + colr[st] + '; border-color: ' + colr[st] + '55;">' + st + '</span></div>' +
+                    '<div class="ttl">' + r.t + '</div><div class="row sb"><span class="meta">From ' + SIDE[r.by].n + ' · ' + cvA(r.amt) + '</span><span class="row" style="gap: 4px;">' + key(r, 'atlas') + key(r, 'nord') + '</span></div>' +
+                    (needsMe(r) ? '<div class="row" style="gap: 8px;"><button class="interactive-btn ghost bad" onclick="decide(\'' + r.id + '\', false)">' + (b ? 'Board reject' : 'Reject') + '</button><button class="interactive-btn solid" onclick="decide(\'' + r.id + '\', true)">' + (b ? 'Board approve' : 'Approve') + '</button></div>' : '') + '</div>'; }).join('');
+        }
+
+        // ---- Board resolutions (double majority) ----
+        const VOTES = [
+            { id: 'V-21', t: 'Adopt the unified brand “AtlasNord”', d: 'Both legacy names retire over 12 months. Signage and invoices switch at month 6.', close: 'Closes Friday', s: { atlas: ['f', 'f', 'a', null], nord: ['f', 'x', 'f', 'f'] } },
+            { id: 'V-22', t: 'Appoint Marta Keller as Group CFO', d: 'Atlas nominates the deputy CFO. The CEO role rotates between the two sides in year 3.', close: 'Closes next Tuesday', s: { atlas: ['f', 'f', 'x', null], nord: ['f', 'f', 'f', null] } },
+            { id: 'V-23', t: 'Fund one shared transport management system (A$18M)', d: 'Replaces both fleets\' systems. Live in 9 months. Funded 50/50.', close: 'Closes next Friday', s: { atlas: ['f', 'f', 'f', null], nord: ['f', 'f', 'x', null] } },
+            { id: 'V-20', t: 'Adopt a joint code of conduct', d: 'Passed last month.', close: 'Closed', done: true, s: { atlas: ['f', 'f', 'f', 'f'], nord: ['f', 'f', 'f', 'a'] } }
+        ];
+        function sideState(v, s) { const a = v.s[s], f = a.filter(x => x === 'f').length, p = a.filter(x => x === null).length;
+            return { f, x: a.filter(x => x === 'x').length, p, st: f >= 3 ? 'Carried' : (f + p < 3 ? 'Defeated' : 'Open') }; }
+        function voteOutcome(v) { const a = sideState(v, 'atlas').st, n = sideState(v, 'nord').st; return (a === 'Carried' && n === 'Carried') ? 'Passed' : (a === 'Defeated' || n === 'Defeated') ? 'Failed' : 'Open'; }
+        function openVoteCount() { const s = mySide(); return VOTES.filter(v => !v.done && (s === 'joint' ? voteOutcome(v) === 'Open' : v.s[s].includes(null))).length; }
+        function castVote(id, c) {
+            const s = mySide(); if (s === 'joint') return;
+            const v = VOTES.find(x => x.id === id), a = v.s[s], i = a.indexOf(null); if (i < 0) return;
+            a[i] = c; v.mine = v.mine || {}; v.mine[s] = c;
+            const o = voteOutcome(v); if (o !== 'Open') { v.done = true; v.close = 'Closed'; }
+            sys('🗳️ ' + SIDE[s].n + ' cast a vote on ' + v.id + (o !== 'Open' ? '. Result: ' + o + '.' : '.')); renderAll();
+        }
+        function renderVotes() {
+            const s = mySide(), colr = { Passed: '#00FF85', Failed: '#FF4D6D', Open: '#F59E0B' }, sc = { f: '#00FF85', x: '#FF4D6D', a: '#71717A' }, nm = { f: 'For', x: 'Against', a: 'Abstain' };
+            $id('vote-list').innerHTML = VOTES.map(v => { const o = voteOutcome(v);
+                const rows = ['atlas', 'nord'].map(k => { const t = sideState(v, k);
+                    return '<div class="row sb"><span class="meta" style="color: ' + SIDE[k].c + ';">' + SIDE[k].n + '</span><span class="row" style="gap: 5px;">' + v.s[k].map(x => '<i class="seat" style="' + (x ? 'background: ' + sc[x] + '; border-color: ' + sc[x] + ';' : '') + '"></i>').join('') + '</span><span class="meta" style="min-width: 78px; text-align: right;">' + t.f + ' For · ' + t.st + '</span></div>'; }).join('');
+                let act = '';
+                if (!v.done && s === 'joint') act = '<div class="meta">Chair view. Switch to a director to cast a vote.</div>';
+                else if (!v.done && v.s[s].includes(null)) act = '<div class="row" style="gap: 8px;">' + ['f', 'x', 'a'].map(c => '<button class="interactive-btn ghost" style="' + (c === 'f' ? 'color: #00FF85;' : c === 'x' ? 'color: #FF4D6D;' : '') + '" onclick="castVote(\'' + v.id + '\', \'' + c + '\')">' + nm[c] + '</button>').join('') + '</div>';
+                else if (v.mine && v.mine[s]) act = '<div class="meta">Your vote: ' + nm[v.mine[s]] + ' ✓</div>';
+                return '<div class="card" style="padding: 14px; gap: 9px;"><div class="row sb"><span class="meta">' + v.id + ' · ' + v.close + '</span><span class="tag" style="color: ' + colr[o] + '; border-color: ' + colr[o] + '55;">' + o + '</span></div><div class="ttl">' + v.t + '</div><div class="desc">' + v.d + '</div>' + rows + act + '</div>'; }).join('');
+        }
+
+        // ---- Integration roadmap ----
+        const PLAN = [
+            { n: 'Governance', c: '#00FF85', m: [['Co-chairs named and 4–4 board seated', 1], ['Joint delegation-of-authority policy', 1], ['Unified audit and risk committee', 0]] },
+            { n: 'Finance & reporting', c: '#38BDF8', m: [['Single chart of accounts', 1], ['Consolidated month-end close in 6 days', 0], ['Intercompany funding framework', 0]] },
+            { n: 'Technology', c: '#A78BFA', m: [['Shared identity and email', 1], ['TMS vendor selected', 1], ['TMS live in both fleets', 0]] },
+            { n: 'People & culture', c: '#FBBF24', m: [['Leadership team named, no side displaced', 1], ['Harmonised pay bands', 0], ['Joint values workshop for all staff', 0]] },
+            { n: 'Customers & brand', c: '#FB7185', m: [['Top-50 customer outreach', 1], ['Cross-sell pilot on AU–EU lanes', 0], ['Unified brand live', 0]] }
+        ];
+        function toggleMs(i, j) { PLAN[i].m[j][1] ^= 1; renderPlan(); renderHome(); }
+        function renderPlan() {
+            const tot = PLAN.reduce((a, w) => a + w.m.length, 0), done = PLAN.reduce((a, w) => a + w.m.filter(x => x[1]).length, 0), p = Math.round(done / tot * 100);
+            $id('plan-top').innerHTML = '<div class="card"><div class="row sb"><span style="' + lbl + '">Integration progress</span><span class="tag" style="color: #00FF85; border-color: #00FF8555;">' + (p < 35 ? 'Stabilise' : p < 70 ? 'Integrate' : 'Optimise') + ' phase</span></div><div style="font-size: 28px; font-weight: 800; letter-spacing: -1px;">' + p + '%</div><div class="pbar"><i style="width: ' + p + '%; background: linear-gradient(90deg, #00FF85, #38BDF8);"></i></div><div class="meta">' + done + ' of ' + tot + ' milestones done. Tap a milestone to update it.</div></div>';
+            $id('plan-list').innerHTML = PLAN.map((w, i) => { const d = w.m.filter(x => x[1]).length, q = Math.round(d / w.m.length * 100);
+                return '<div class="card" style="padding: 14px; gap: 6px;"><div class="row sb"><span class="ttl" style="color: ' + w.c + ';">' + w.n + '</span><span class="meta">' + q + '%</span></div><div class="pbar"><i style="width: ' + q + '%; background: ' + w.c + ';"></i></div>' +
+                    w.m.map((x, j) => '<div class="ms" onclick="toggleMs(' + i + ', ' + j + ')"><div class="ck" style="background: ' + (x[1] ? w.c : 'transparent') + '; border-color: ' + (x[1] ? w.c : '#3F3F46') + ';">' + (x[1] ? '✓' : '') + '</div><span style="' + (x[1] ? 'color: #71717A; text-decoration: line-through;' : '') + '">' + x[0] + '</span></div>').join('') + '</div>'; }).join('');
+            const cu = [['Key-staff retention · Atlas', 95, '#2DD4BF'], ['Key-staff retention · Nordlicht', 93, '#A78BFA'], ['“One team” pulse · Atlas', 71, '#2DD4BF'], ['“One team” pulse · Nordlicht', 64, '#A78BFA']];
+            $id('culture-box').innerHTML = '<div class="card" style="gap: 10px;"><span style="' + lbl + '">People & culture pulse</span>' + cu.map(x => '<div><div class="row sb" style="font-size: 12px; margin-bottom: 5px;"><span>' + x[0] + '</span><b>' + x[1] + '%</b></div><div class="pbar"><i style="width: ' + x[1] + '%; background: ' + x[2] + ';"></i></div></div>').join('') + '<div class="meta">The “one team” pulse is the share of staff who say they feel part of one company.</div></div>';
+        }
+
+        // ---- Overview: governance, uplift and synergy tracker ----
+        function renderHome() {
+            const sum = co => ALL_UNITS.filter(u => u.co === co).reduce((t, u) => t + convertToBase(u.balance, u.currency), 0);
+            const a = sum('atlas'), n = sum('nord'), pa = Math.round(a / (a + n) * 100), days = Math.floor((Date.now() - CLOSE_T) / 864e5);
+            const split = (l, x) => '<div><div class="row sb meta"><span>' + l + '</span><span><b style="color: #2DD4BF;">Atlas ' + x + '%</b> · <b style="color: #A78BFA;">Nordlicht ' + (100 - x) + '%</b></span></div><div class="split" style="margin-top: 5px;"><i style="width: ' + x + '%; background: #2DD4BF;"></i><i style="width: ' + (100 - x) + '%; background: #A78BFA;"></i></div></div>';
+            const pend = (k, txt, tab) => k ? '<div class="settings-row" style="border: 1px solid #1E1E24; border-radius: 12px; padding: 10px 12px;" onclick="goTab(\'' + tab + '\')"><span>' + txt + '</span><span class="row-value">' + k + ' ›</span></div>' : '';
+            $id('gov-box').innerHTML = '<div class="card" style="gap: 10px;"><div class="row sb"><span style="' + lbl + '">Merger of equals</span><span class="meta">Day ' + days + ' since close</span></div>' + split('Ownership', 50) + split('Revenue contribution', pa) +
+                '<div class="meta">Atlas brings ' + pa + '% of combined revenue for 50% ownership. Board: 4 seats each, co-chaired by Mia Hartley and Lukas Brandt.</div>' +
+                pend(REQS.filter(needsMe).length, 'Requests waiting for sign-off', 'requests') + pend(openVoteCount(), 'Resolutions open for voting', 'votes') + '</div>';
+        }
+        function renderSynergy() {
+            const code = activeCurrency, m = CURRENCY_META[code], cv = x => m.symbol + formatMoney(convertFromBase(x, code)), u = mergerUplift();
+            let h = '';
+            if (u) {
+                const top = Math.max(u.stand, u.actual), good = u.up >= 0, col = good ? '#00FF85' : '#FF4D6D';
+                const bar = (l, v, c) => '<div style="display: grid; grid-template-columns: 92px 1fr auto; gap: 8px; align-items: center; font-size: 11px;"><span style="color: #A1A1AA;">' + l + '</span><div class="pbar"><i style="width: ' + (v / top * 100) + '%; background: ' + c + ';"></i></div><b>' + cv(v) + '</b></div>';
+                h = '<div class="card"><span style="' + lbl + '">Merger uplift vs standalone</span><div style="font-size: 28px; font-weight: 800; letter-spacing: -1px; color: ' + col + ';">' + (good ? '+' : '−') + Math.abs(u.up).toFixed(1) + '%</div>' + bar('Standalone path', u.stand, '#52525B') + bar('Merged actual', u.actual, col) +
+                    '<div class="meta">Standalone extends the pre-close trend (' + u.r.toFixed(2) + '% a month). ' + USER.memberSince + '.</div></div>';
+            }
+            const up = $id('uplift-box'); if (up) up.innerHTML = h;
+            const box = $id('synergy-box'); if (!box) return;
+            box.innerHTML = '<div class="card" style="gap: 10px;"><span style="' + lbl + '">Synergy tracker · joint programme</span>' + SYNERGY.map(x => { const p = Math.round(x.done / x.plan * 100);
+                return '<div><div class="row sb" style="font-size: 12px; margin-bottom: 5px;"><b>' + x.n + '</b><span style="color: #A1A1AA;">' + cv(x.done) + ' of ' + cv(x.plan) + ' · ' + p + '%</span></div><div class="pbar"><i style="width: ' + p + '%; background: ' + x.c + ';"></i></div></div>'; }).join('') + '</div>';
+        }
+        function updateBadges() { [['requests', REQS.filter(needsMe).length], ['votes', openVoteCount()]].forEach(([k, c]) => { const b = $id('bd-' + k); if (b) { b.textContent = c; b.style.display = c ? 'flex' : 'none'; } }); }
+        function renderAll() { renderHome(); renderSynergy(); renderRequests(); renderVotes(); renderPlan(); updateBadges(); }
+        function onTab(t) { if (t === 'chat') scrollChat(); }
+        function fitPhone() {
+            const f = document.querySelector('.phone-frame');
+            f.style.transform = innerWidth <= 500 ? '' : 'scale(' + Math.min(1, (innerHeight - 24) / 844, (innerWidth - 24) / 390) + ')';
+            const t = $id('sb-time'); if (t) t.textContent = hhmm();
+        }
+        addEventListener('resize', fitPhone); setInterval(fitPhone, 30000);
+
+        // --- Render everything that shows an account balance from ACCOUNTS ---
+        // Native-currency display of an account balance (symbol + amount + currency code).
+        function formatAccountBalance(account) {
+            const meta = CURRENCY_META[account.currency];
+            return meta.symbol + account.balance.toLocaleString('en-US', { maximumFractionDigits: 1 }) + 'M ' + account.currency;
+        }
+
+        // "≈ $58,366 AUD": the balance in the currency chosen on the net worth card.
+        // Empty when the account is already in that currency.
+        function formatConvertedBalance(account) {
+            if (account.currency === activeCurrency) return '';
+            const value = convertFromBase(convertToBase(account.balance, account.currency), activeCurrency);
+            return '≈ ' + CURRENCY_META[activeCurrency].symbol + value.toFixed(1) + 'M ' + activeCurrency;
+        }
+
+        function accountRowHTML(account, extraStyle) {
+            const converted = formatConvertedBalance(account);
+            return '<div class="account-row" onclick="openAccount(\'' + account.id + '\')"' + (extraStyle ? ' style="' + extraStyle + '"' : '') + '>' +
+                '<div style="display: flex; align-items: center; gap: 12px;">' +
+                    '<div style="width: 36px; height: 36px; border-radius: 10px; background: ' + account.color + '; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">' + account.letter + '</div>' +
+                    '<div><div style="font-size: 13px; font-weight: 600;">' + account.name + '</div>' +
+                    '<div style="font-size: 11px; color: #71717A;">' + account.type + '</div></div>' +
+                '</div>' +
+                '<div style="display: flex; align-items: center; gap: 8px;">' +
+                    '<div style="text-align: right;">' +
+                        '<div style="font-size: 13px; font-weight: 700;">' + formatAccountBalance(account) + '</div>' +
+                        (converted ? '<div style="font-size: 11px; color: #71717A; margin-top: 2px;">' + converted + '</div>' : '') +
+                    '</div>' +
+                    '<span style="font-size: 16px; color: #71717A;">›</span>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function accountCountLabel() {
+            return ACCOUNTS.length + ' units';
+        }
+
+        // Rows are redrawn on their own (not with the Transfer dropdowns) so changing
+        // currency updates the converted amounts without resetting a dropdown selection.
+        function renderAccountRows() {
+            document.getElementById('visible-accounts').innerHTML =
+                ACCOUNTS.slice(0, VISIBLE_ACCOUNT_COUNT).map(a => accountRowHTML(a)).join('');
+            document.getElementById('extra-accounts').innerHTML =
+                ACCOUNTS.slice(VISIBLE_ACCOUNT_COUNT).map(a => accountRowHTML(a, 'margin-bottom: 0;')).join('');
+        }
+
+        function renderAccounts() {
+            renderAccountRows();
+            document.getElementById('toggle-text').innerText = accountCountLabel();
+
+        }
+
+        let activeCurrency = BASE_CURRENCY;
+        let ratesAreLive = false;
+        let ratesAsOf = null;                 // the date the ECB published the rates we hold (YYYY-MM-DD)
+        let ratesUpdatedAt = null;            // when THIS page last fetched them (a Date, i.e. the refresh time)
+        let ratesLastFetchFailed = false;
+        let ratesRefreshing = false;
+
+        // --- Net worth history graph ---
+        // HISTORY is generated inline by buildHistory() below. Each record holds native account
+        // balances plus that date's FX rates. Net worth is calculated per record using
+        // THAT record's own rates, so switching currency re-values every past point
+        // correctly instead of just rescaling today's numbers.
+        const TIMEFRAMES = { '3 Months': 3, '6 Months': 6, '1 Year': 12, '2 Years': 24, 'All Time': null };
+        let activeTimeframe = '6 Months';
+        let openAccountId = null;                 // account whose detail screen is open
+        let accountTimeframe = '6 Months';        // window for the account detail graph
+        let acctViewCurrency = null;                // this account's own display currency; local only, never saved
+        let performanceOpen = false;               // whether the Performance screen is open
+        let perfScrubActive = false;                // whether the user is currently dragging the graph
+        let perfLayout = null;                      // last drawGraph() result for the big graph (for scrub math)
+        const ACCOUNT_TIMEFRAMES = [['3M', '3 Months'], ['6M', '6 Months'], ['1Y', '1 Year'], ['All', 'All Time']];
+        const PERF_TIMEFRAMES = [['3M', '3 Months'], ['6M', '6 Months'], ['1Y', '1 Year'], ['2Y', '2 Years'], ['All', 'All Time']];
+        const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        function getRecordTotalAUD(record) {
+            let total = 0;
+            for (const account of ACCOUNTS) {
+                const rate = record.rates[account.currency];
+                if (!rate) return null;                       // cannot value this record safely
+                total += (record.balances[account.id] || 0) / rate;
+            }
+            return total;
+        }
+
+        function getRecordTotal(record, code) {
+            const aud = getRecordTotalAUD(record);
+            const rate = record.rates[code];
+            if (aud === null || !rate) return null;
+            return aud * rate;
+        }
+
+                // The "today" line is built in memory from live ACCOUNTS balances and current rates.
+        function getHistoryRecords() {
+            if (typeof HISTORY === 'undefined' || !HISTORY.length) return [];
+            const records = HISTORY.slice();
+            const now = new Date();
+            const todayISO = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
+            const balances = {};
+            ACCOUNTS.forEach(a => { balances[a.id] = a.balance; });
+            const live = { balances: balances, rates: Object.assign({}, EXCHANGE_RATES) };
+
+            const newest = records[records.length - 1];
+            if (newest.date >= todayISO) records[records.length - 1] = Object.assign({ date: newest.date }, live);
+            else records.push(Object.assign({ date: todayISO }, live));
+            return records;
+        }
+        // The raw history records that fall inside a timeframe, oldest first.
+        // `clipped` is true when the timeframe reaches back further than the data does.
+        function getRecordsInWindow(label) {
+            const records = getHistoryRecords()
+                .map(r => Object.assign({ t: Date.parse(r.date + 'T00:00:00Z') }, r))
+                .filter(r => !isNaN(r.t))
+                .sort((a, b) => a.t - b.t);
+            if (!records.length) return { records: [], clipped: false };
+            const months = TIMEFRAMES[label];
+            if (months === null) return { records, clipped: false };
+            const cutoff = new Date(records[records.length - 1].t);
+            cutoff.setUTCMonth(cutoff.getUTCMonth() - months);
+            return { records: records.filter(r => r.t >= cutoff.getTime()), clipped: cutoff.getTime() < records[0].t };
+        }
+
+        // Turns history records into graph points for a chosen timeframe.
+        // `valueOf(record)` returns the value to plot for that record, or null to skip it.
+        // `clipped` is true when the timeframe reaches back further than the data does.
+        function buildSeries(valueOf, label) {
+            const { records, clipped } = getRecordsInWindow(label);
+            const points = records.map(r => ({ t: r.t, value: valueOf(r) })).filter(p => p.value !== null);
+            return { points, clipped: clipped && points.length === records.length };
+        }
+
+        // Total net worth over time, in the chosen currency.
+        function getHistorySeries(code, label) {
+            return buildSeries(r => getRecordTotal(r, code), label);
+        }
+
+        // One account's balance on a record's date, valued in `code` using THAT record's rates.
+        function getAccountRecordValue(record, account, code) {
+            const balance = record.balances[account.id];
+            const fromRate = record.rates[account.currency];
+            const toRate = record.rates[code];
+            if (balance === undefined || !fromRate || !toRate) return null;
+            return balance / fromRate * toRate;
+        }
+
+        function getAccountSeries(account, code, label) {
+            return buildSeries(r => getAccountRecordValue(r, account, code), label);
+        }
+
+        // Change over the most recent month of history, in the chosen currency.
+        function getPastMonthChange(code) {
+            const points = getHistorySeries(code, 'All Time').points;
+            if (points.length < 2) return null;
+            const latest = points[points.length - 1];
+            const cutoff = new Date(latest.t);
+            cutoff.setUTCMonth(cutoff.getUTCMonth() - 1);
+            const start = points.find(p => p.t >= cutoff.getTime());
+            if (!start || start === latest || start.value <= 0) return null;
+            return { amount: latest.value - start.value, pct: (latest.value - start.value) / start.value * 100 };
+        }
+
+        function formatGraphDate(t, withDay) {
+            const d = new Date(t);
+            return withDay
+                ? d.getUTCDate() + ' ' + MONTH_NAMES[d.getUTCMonth()]
+                : MONTH_NAMES[d.getUTCMonth()] + " '" + String(d.getUTCFullYear()).slice(2);
+        }
+
+        // Draws a series into the SVG/label elements named in `ids`, sized WxH (default 320x70).
+        // Used by the net worth graph, each account's detail graph, and the performance graph.
+        // Returns the layout it drew with (t0, t1, xOf, yOf) so a caller can add its own overlays,
+        // such as the performance screen's touch-scrub guide line and dot.
+        function drawGraph(points, ids, size) {
+            const line = document.getElementById(ids.line);
+            const area = document.getElementById(ids.area);
+            const svg = document.getElementById(ids.svg);
+            const labels = document.getElementById(ids.labels);
+            const empty = document.getElementById(ids.empty);
+            const pctEl = document.getElementById(ids.pct);
+            const W = (size && size.w) || 320, H = (size && size.h) || 70;
+            const TOP = H * 0.08, BOTTOM = H - H * 0.14;
+
+            const t0 = points.length ? points[0].t : 0;
+            const t1 = points.length ? points[points.length - 1].t : 0;
+            if (points.length < 2 || t1 === t0) {
+                line.setAttribute('d', '');
+                area.setAttribute('d', '');
+                labels.innerHTML = '';
+                empty.style.display = 'block';
+                if (pctEl) pctEl.innerText = '—';
+                return { points: [], t0, t1, W, H, TOP, BOTTOM, xOf: () => W / 2, yOf: () => H / 2 };
+            }
+            empty.style.display = 'none';
+
+            const values = points.map(p => p.value);
+            const min = Math.min(...values), max = Math.max(...values);
+            const xOf = p => ((p.t - t0) / (t1 - t0)) * W;                       // spaced by real date
+            const yOf = p => max === min ? (TOP + BOTTOM) / 2 : BOTTOM - ((p.value - min) / (max - min)) * (BOTTOM - TOP);
+
+            const path = 'M ' + points.map(p => xOf(p).toFixed(1) + ' ' + yOf(p).toFixed(1)).join(' L ');
+            line.setAttribute('d', path);
+            area.setAttribute('d', path + ' L ' + W + ' ' + H + ' L 0 ' + H + ' Z');
+
+            // Change over the visible window, in the selected currency.
+            const first = points[0].value, last = points[points.length - 1].value;
+            const up = last >= first;
+            const color = up ? '#00FF85' : '#FF4D6D';
+            svg.style.color = color;
+            if (pctEl) {
+                pctEl.parentElement.style.color = color;
+                pctEl.innerText = first > 0 ? (up ? '+' : '') + (((last - first) / first) * 100).toFixed(1) + '%' : '—';
+            }
+
+            // Six evenly spaced date labels across the visible window.
+            const withDay = (t1 - t0) / 864e5 <= 200;
+            let html = '';
+            for (let i = 0; i < 6; i++) html += '<span>' + formatGraphDate(t0 + (t1 - t0) * i / 5, withDay) + '</span>';
+            labels.innerHTML = html;
+
+            return { points, t0, t1, W, H, TOP, BOTTOM, xOf, yOf };
+        }
+
+        function graphTitle(prefix, label, clipped, points) {
+            return prefix + ' (' + label + (clipped && points.length ? ' · since ' + formatGraphDate(points[0].t, false) : '') + ')';
+        }
+
+        function renderGraph() {
+            const { points, clipped } = getHistorySeries(activeCurrency, activeTimeframe);
+            document.getElementById('timeframe-title').innerText = graphTitle('Performance', activeTimeframe, clipped, points);
+            drawGraph(points, { line: 'graph-line', area: 'graph-area', svg: 'graph-svg', labels: 'graph-labels', empty: 'graph-empty', pct: 'timeframe-pct' });
+        }
+
+        function convertFromBase(amountAUD, code) {
+            return amountAUD * EXCHANGE_RATES[code];
+        }
+
+        function convertToBase(amount, sourceCurrency) {
+            return amount / EXCHANGE_RATES[sourceCurrency];
+        }
+
+        function getPortfolioTotalAUD() {
+            return ACCOUNTS.reduce((total, account) => {
+                return total + convertToBase(account.balance, account.currency);
+            }, 0);
+        }
+
+        function getPortfolioTotal(code) {
+            return convertFromBase(getPortfolioTotalAUD(), code);
+        }
+
+        // "21 Sep, 4:43 PM": the date and time of a refresh, in the user's own timezone.
+        function formatRefreshStamp(d) {
+            return d.getDate() + ' ' + MONTH_NAMES[d.getMonth()] + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        }
+
+        // "Fri 18 Sep": the date the ECB published a set of rates.
+        function formatRateDate(iso) {
+            const d = new Date(iso + 'T00:00:00Z');
+            return d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }) + ' ' + d.getUTCDate() + ' ' + MONTH_NAMES[d.getUTCMonth()];
+        }
+
+        function localISODate(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        // Re-runs a CSS animation by removing and re-adding its class.
+        function restartAnimation(el, cls) {
+            if (!el) return;
+            el.classList.remove(cls);
+            void el.offsetWidth;
+            el.classList.add(cls);
+        }
+
+        // Two lines under the currency list:
+        //   line 1: WHEN this app last refreshed (today's date and time)
+        //   line 2: which ECB fixing those rates are from (can be an earlier working day)
+        function updateRatesStatus() {
+            const main = document.getElementById('rates-status-text');
+            const sub = document.getElementById('rates-status-sub');
+            if (!main || !sub) return;
+
+            if (ratesAreLive && !ratesLastFetchFailed) {
+                main.innerText = 'Updated ' + formatRefreshStamp(ratesUpdatedAt);
+                main.style.color = '#00FF85';
+                sub.innerText = 'ECB fixing: ' + (ratesAsOf === localISODate(new Date()) ? 'today' : formatRateDate(ratesAsOf));
+            } else if (ratesAreLive) {
+                main.innerText = 'Couldn\u2019t refresh \u00b7 using last rates';
+                main.style.color = '#71717A';
+                sub.innerText = 'ECB fixing: ' + formatRateDate(ratesAsOf) + ' \u00b7 tap \u27f3 to retry';
+            } else {
+                main.innerText = 'Offline \u00b7 fallback rates';
+                main.style.color = '#71717A';
+                sub.innerText = 'Couldn\u2019t reach the rate service \u00b7 tap \u27f3';
+            }
+            restartAnimation(document.getElementById('rates-status'), 'status-swap');
+        }
+
+        // Spinner + pulsing text while a refresh is in flight.
+        function setRatesRefreshingUI(on) {
+            const btn = document.getElementById('rates-refresh-btn');
+            const main = document.getElementById('rates-status-text');
+            const sub = document.getElementById('rates-status-sub');
+            if (btn) btn.classList.toggle('refreshing', on);
+            if (!main || !sub) return;
+            if (on) {
+                main.innerText = 'Refreshing rates\u2026';
+                main.style.color = '#71717A';
+                main.classList.add('pulsing');
+                sub.innerText = 'Fetching the latest ECB rates';
+            } else {
+                main.classList.remove('pulsing');
+            }
+        }
+
+        // Numbers ease in after a successful manual refresh.
+        function playRefreshAnimations() {
+            ['balance-display', 'balance-subtext', 'curr-items'].forEach(id => restartAnimation(document.getElementById(id), 'value-refresh'));
+        }
+
+        // Frankfurter serves the European Central Bank's daily reference rates (free, no key).
+        // The ECB publishes once per working day (~16:00 CET), so the newest rates can be
+        // from an earlier day than today. The second address is the older host, kept as a backup.
+        const RATE_SOURCES = [
+            targets => 'https://api.frankfurter.dev/v1/latest?base=' + BASE_CURRENCY + '&symbols=' + targets,
+            targets => 'https://api.frankfurter.app/latest?from=' + BASE_CURRENCY + '&to=' + targets
+        ];
+        const RATE_TIMEOUT_MS = 8000;     // give up on a request after this long
+        const MIN_REFRESH_MS = 1200;      // a manual refresh always animates at least this long
+
+        async function fetchRatesFromAnySource() {
+            const targets = Object.keys(EXCHANGE_RATES).filter(c => c !== BASE_CURRENCY).join(',');
+            let lastError = new Error('No rate source available');
+            for (const buildUrl of RATE_SOURCES) {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), RATE_TIMEOUT_MS);
+                try {
+                    const response = await fetch(buildUrl(targets), { signal: controller.signal });
+                    if (!response.ok) throw new Error('Rate request failed: ' + response.status);
+                    const data = await response.json();
+                    if (!data || !data.rates || !data.date) throw new Error('Unexpected rate response');
+                    return data;
+                } catch (err) {
+                    lastError = err;
+                } finally {
+                    clearTimeout(timer);
+                }
+            }
+            throw lastError;
+        }
+
+        // `manual` is true when the user taps the refresh button.
+        async function fetchLiveRates(manual) {
+            if (ratesRefreshing) return;
+            ratesRefreshing = true;
+            setRatesRefreshingUI(true);
+            const started = Date.now();
+            let succeeded = false;
+
+            try {
+                const data = await fetchRatesFromAnySource();
+                Object.keys(data.rates).forEach(code => {
+                    if (code in EXCHANGE_RATES && data.rates[code] > 0) EXCHANGE_RATES[code] = data.rates[code];
+                });
+                ratesAreLive = true;
+                ratesLastFetchFailed = false;
+                ratesAsOf = data.date;
+                ratesUpdatedAt = new Date();
+                succeeded = true;
+            } catch (err) {
+                // Network unavailable, blocked, or API down: keep using the last known rates.
+                console.warn('Live FX fetch failed, using last known rates.', err);
+                ratesLastFetchFailed = true;
+            }
+
+            // Keep the spinner up long enough to read as a deliberate refresh.
+            if (manual) {
+                const wait = MIN_REFRESH_MS - (Date.now() - started);
+                if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
+            }
+
+            ratesRefreshing = false;
+            setRatesRefreshingUI(false);
+            renderPortfolioValue();
+            renderGraph();
+            refreshAccountViews();
+            renderCurrencyMenu();
+            updateRatesStatus();
+            if (manual && succeeded) playRefreshAnimations();
+        }
+
+        function formatMoney(value) {
+            return value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'M';
+        }
+
+        function toggleCurrencyMenu() {
+            document.getElementById('curr-menu').classList.toggle('open');
+        }
+
+        // Every menu value is the sum of all account balances, converted from each
+        // native currency using the most recently fetched FX rates.
+        function renderCurrencyMenu() {
+            const container = document.getElementById('curr-items');
+            container.innerHTML = Object.keys(EXCHANGE_RATES).map(code => {
+                const meta = CURRENCY_META[code];
+                const value = getPortfolioTotal(code);
+                const activeClass = code === activeCurrency ? ' active' : '';
+                return `<button class="dropdown-item${activeClass}" onclick="selectCurrency('${code}')">` +
+                       `<span>${meta.flag} ${code}</span>` +
+                       `<span style="color:#71717A">${meta.symbol}${value.toFixed(1)}M</span>` +
+                       `</button>`;
+            }).join('');
+        }
+
+        function selectCurrency(code) {
+            activeCurrency = code;
+            renderPortfolioValue();
+            renderGraph();
+            refreshAccountViews();
+            renderCurrencyMenu();
+            document.getElementById('curr-menu').classList.remove('open');
+        }
+
+        function renderPortfolioValue() {
+            const code = activeCurrency;
+            const meta = CURRENCY_META[code];
+            const sub = document.getElementById('balance-subtext');
+
+            document.getElementById('curr-label').innerText = code + ' ' + meta.flag;
+            document.getElementById('balance-display').innerText = meta.symbol + formatMoney(getPortfolioTotal(code));
+
+            // Change over the past month, worked out from the history records.
+            const change = getPastMonthChange(code);
+            if (!change) { sub.innerText = ''; return; }
+            const up = change.amount >= 0;
+            sub.style.color = up ? '#00FF85' : '#FF4D6D';
+            sub.innerText = (up ? '↑ +' : '↓ −') + Math.abs(change.pct).toFixed(1) + '% (' +
+                (up ? '+' : '−') + meta.symbol + formatMoney(Math.abs(change.amount)) + ' ' + code + ') past month';
+        }
+
+        // Initialize instantly with fallback rates so the UI never shows a blank state,
+        // then fetch live rates and re-render once they arrive.
+        renderUser();
+        renderRoleChips();
+        renderChat();
+        fitPhone();
+        renderSettings();
+        renderAccounts();
+        renderCurrencyMenu();
+        selectCurrency(BASE_CURRENCY);
+        initPerfScrub();
+        initPerfHover();
+        fetchLiveRates(false);
+        // Keep an open dashboard current without relying on a page reload.
+        setInterval(() => fetchLiveRates(false), 5 * 60 * 1000);
+
+        // Shared by the home card and the performance screen, which both plot activeTimeframe.
+        function setTimeframe(label) {
+            activeTimeframe = label;
+            renderGraph();
+            renderPerfTimeframes();
+            if (performanceOpen) renderPerformanceScreen();
+        }
+
+        function toggleAccounts() {
+            const extra = document.getElementById('extra-accounts');
+            const icon = document.getElementById('toggle-icon');
+            const text = document.getElementById('toggle-text');
+            if (extra.style.display === 'none' || extra.style.display === '') {
+                extra.style.display = 'flex';
+                icon.innerText = '−';
+                text.innerText = 'less';
+            } else {
+                extra.style.display = 'none';
+                icon.innerText = '+';
+                text.innerText = accountCountLabel();
+            }
+        }
+
+        // Apple Wallet Card Stacking Interaction
+        let activeCardIndex = 0;
+        function cycleWalletCards() {
+            const cards = document.querySelectorAll('.wallet-card');
+            activeCardIndex = (activeCardIndex + 1) % cards.length;
+            
+            cards.forEach((card, index) => {
+                let pos = (index - activeCardIndex + cards.length) % cards.length;
+                if (pos === 0) {
+                    card.style.top = '0px';
+                    card.style.transform = 'scale(1)';
+                    card.style.opacity = '1';
+                    card.style.zIndex = '10';
+                } else {
+                    card.style.top = (pos * 28) + 'px';
+                    card.style.transform = `scale(${1 - pos * 0.04})`;
+                    card.style.opacity = `${1 - pos * 0.25}`;
+                    card.style.zIndex = `${10 - pos}`;
+                }
+            });
+        }
+
+        // Live Bank Search
+        function filterBanks() {
+            const query = document.getElementById('bank-search').value.toLowerCase();
+            const resultsBox = document.getElementById('bank-results');
+            
+            if (!query) {
+                resultsBox.style.display = 'none';
+                return;
+            }
+
+            const filtered = topBanks.filter(b => b.name.toLowerCase().includes(query));
+            if (filtered.length === 0) {
+                resultsBox.style.display = 'none';
+                return;
+            }
+
+            resultsBox.innerHTML = filtered.map(b => `
+                <div onclick="promptConnect('${b.name}', '${b.code}')" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #27272A;" onmouseover="this.style.background='#27272A'" onmouseout="this.style.background='transparent'">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 28px; height: 28px; border-radius: 6px; background: ${b.color}; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">${b.code[0]}</div>
+                        <span style="font-size: 13px; font-weight: 600; color: #fff;">${b.name}</span>
+                    </div>
+                    <span style="font-size: 11px; color: #00FF85; font-weight: 600;">Connect</span>
+                </div>
+            `).join('');
+            resultsBox.style.display = 'block';
+        }
+
+        let selectedBankName = '';
+        function promptConnect(bankName, code) {
+            selectedBankName = bankName;
+            document.getElementById('bank-results').style.display = 'none';
+            document.getElementById('bank-search').value = '';
+            
+            document.getElementById('modal-icon').innerText = code[0];
+            document.getElementById('modal-title').innerText = 'Securely connect ' + bankName + '?';
+            document.getElementById('modal-desc').innerText = 'Isar uses secure, read-only tokenization to sync your balances without storing credentials.';
+            document.getElementById('modal-actions').style.display = 'flex';
+            document.getElementById('secure-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('secure-modal').style.display = 'none';
+        }
+
+        function startSecureConnect() {
+            const modalBox = document.getElementById('modal-content-box');
+            modalBox.innerHTML = `
+                <div style="width: 36px; height: 36px; border: 3px solid #27272A; border-top-color: #00FF85; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto;"></div>
+                <div>
+                    <h3 style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px;">Redirecting to ${selectedBankName}</h3>
+                    <p style="font-size: 11px; color: #A1A1AA; line-height: 1.4;">Taking you to your provider to securely authorize reading...</p>
+                </div>
+            `;
+            
+            // Simulate smooth authorization flow completion
+            setTimeout(() => {
+                modalBox.innerHTML = `
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,255,133,0.15); color: #00FF85; font-size: 22px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">✓</div>
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;">Successfully Linked</h3>
+                        <p style="font-size: 12px; color: #A1A1AA;">${selectedBankName} has been linked to the shared Isar Synergy workspace.</p>
+                    </div>
+                    <button onclick="closeModalAndReset()" style="background: #00FF85; border: none; border-radius: 12px; padding: 12px; color: #000; font-size: 13px; font-weight: 700; cursor: pointer; width: 100%;">Done</button>
+                `;
+            }, 2200);
+        }
+
+        function closeModalAndReset() {
+            document.getElementById('secure-modal').style.display = 'none';
+            // Reset modal layout for next time
+            document.getElementById('modal-content-box').innerHTML = `
+                <div id="modal-icon" style="width: 48px; height: 48px; border-radius: 12px; background: #00FF85; color: #000; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin: 0 auto;">C</div>
+                <div>
+                    <h3 id="modal-title" style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;">Securely connect?</h3>
+                    <p id="modal-desc" style="font-size: 12px; color: #A1A1AA; line-height: 1.4;">Isar Synergy uses read-only access.</p>
+                </div>
+                <div id="modal-actions" style="display: flex; gap: 10px;">
+                    <button onclick="closeModal()" style="flex: 1; background: #27272A; border: none; border-radius: 12px; padding: 12px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <button onclick="startSecureConnect()" style="flex: 1; background: #00FF85; border: none; border-radius: 12px; padding: 12px; color: #000; font-size: 13px; font-weight: 700; cursor: pointer;">Okay</button>
+                </div>
+            `;
+        }
+
+        function switchTab(tabName, btnElement) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('panel-' + tabName).classList.add('active');
+            onTab(tabName);
+            
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+
+        // --- Account & Settings screen ---
+        function renderUser() {
+            const initials = getInitials(USER.name);
+            document.getElementById('user-avatar').innerText = initials;
+            document.getElementById('profile-avatar').innerText = initials;
+            document.getElementById('welcome-name').innerText = getFirstName(USER.name);
+            document.getElementById('profile-name').innerText = USER.name;
+            document.getElementById('profile-email').innerText = USER.email;
+            document.getElementById('profile-since').innerText = USER.role + ' · ' + USER.memberSince;
+        }
+
+        function renderSettings() {
+            document.querySelectorAll('[data-setting]').forEach(el => {
+                el.classList.toggle('on', !!USER_SETTINGS[el.dataset.setting]);
+            });
+        }
+
+        function toggleSetting(key) {
+            USER_SETTINGS[key] = !USER_SETTINGS[key];
+            renderSettings();
+        }
+
+        // Display-currency buttons: the same currency the net worth card uses.
+        function renderProfileCurrency() {
+            document.getElementById('profile-currency').innerHTML = Object.keys(CURRENCY_META).map(code => {
+                const active = code === activeCurrency;
+                return '<button class="interactive-btn" onclick="setDisplayCurrency(\'' + code + '\')" style="flex: 1; padding: 8px 0; border-radius: 10px; font-size: 11px; ' +
+                    'border: 1px solid ' + (active ? '#00FF85' : '#27272A') + '; background: ' + (active ? '#27272A' : '#18181B') + '; ' +
+                    'color: ' + (active ? '#00FF85' : '#fff') + '; font-weight: ' + (active ? '700' : '600') + ';">' + CURRENCY_META[code].flag + ' ' + code + '</button>';
+            }).join('');
+        }
+
+        function setDisplayCurrency(code) {
+            selectCurrency(code);
+            renderProfileCurrency();
+        }
+
+        function openProfile() {
+            document.getElementById('curr-menu').classList.remove('open');
+            document.getElementById('profile-linked-count').innerText = openVoteCount() + ' open';
+            renderProfileCurrency();
+            document.getElementById('profile-screen').classList.add('open');
+            document.getElementById('profile-content').scrollTop = 0;
+        }
+
+        function closeProfile() {
+            document.getElementById('profile-screen').classList.remove('open');
+        }
+
+        function goToLinkedAccounts() {
+            closeProfile();
+            switchTab('votes', document.getElementById('btn-votes'));
+        }
+
+        function openSignOutDialog() {
+            document.getElementById('signout-dialog').style.display = 'flex';
+        }
+
+        function closeSignOutDialog() {
+            document.getElementById('signout-dialog').style.display = 'none';
+        }
+
+        function confirmSignOut() {
+            closeSignOutDialog();
+            document.getElementById('signed-out-name').innerText = getFirstName(USER.name);
+            document.getElementById('signed-out-view').style.display = 'flex';
+        }
+
+        function signBackIn() {
+            document.getElementById('signed-out-view').style.display = 'none';
+            closeProfile();
+        }
+
+        // --- Account detail screen (opened by tapping an account row) ---
+        function refreshAccountViews() {
+            renderAccountRows();
+            renderAll();
+            if (openAccountId) renderAccountDetail();
+            if (performanceOpen) renderPerformanceScreen();
+        }
+
+        function openAccount(id) {
+            const account = ACCOUNTS.find(a => a.id === id);
+            if (!account) return;
+            openAccountId = id;
+            acctViewCurrency = account.currency;             // always starts on the account's own currency
+            document.getElementById('curr-menu').classList.remove('open');
+            renderAccountDetail();
+            document.getElementById('account-screen').classList.add('open');
+            document.getElementById('account-content').scrollTop = 0;
+        }
+
+        function closeAccount() {
+            openAccountId = null;
+            acctViewCurrency = null;
+            document.getElementById('acct-curr-menu').classList.remove('open');
+            document.getElementById('account-screen').classList.remove('open');
+        }
+
+        function setAccountTimeframe(label) {
+            accountTimeframe = label;
+            renderAccountDetail();
+        }
+
+        function renderAccountTimeframes() {
+            document.getElementById('acct-timeframes').innerHTML = ACCOUNT_TIMEFRAMES.map(pair => {
+                const active = pair[1] === accountTimeframe;
+                return '<button class="interactive-btn" onclick="setAccountTimeframe(\'' + pair[1] + '\')" style="flex: 1; padding: 6px 0; border-radius: 8px; font-size: 11px; ' +
+                    'border: 1px solid ' + (active ? '#00FF85' : '#27272A') + '; background: ' + (active ? '#27272A' : '#18181B') + '; ' +
+                    'color: ' + (active ? '#00FF85' : '#fff') + '; font-weight: ' + (active ? '700' : '600') + ';">' + pair[0] + '</button>';
+            }).join('');
+        }
+
+        // "$5,300.00 EUR": an account's balance converted into any currency, using live rates.
+        function formatAccountBalanceIn(account, code) {
+            const meta = CURRENCY_META[code];
+            const value = convertFromBase(convertToBase(account.balance, account.currency), code);
+            return meta.symbol + value.toLocaleString('en-US', { maximumFractionDigits: 1 }) + 'M ' + code;
+        }
+
+        function toggleAcctCurrencyMenu() {
+            document.getElementById('acct-curr-menu').classList.toggle('open');
+        }
+
+        // Same list, same live rates, same style as the net worth card's currency menu —
+        // just valued against this one account's balance instead of the whole portfolio.
+        function renderAcctCurrencyMenu(account) {
+            document.getElementById('acct-curr-label').innerText = acctViewCurrency + ' ' + CURRENCY_META[acctViewCurrency].flag;
+            document.getElementById('acct-curr-items').innerHTML = Object.keys(EXCHANGE_RATES).map(code => {
+                const meta = CURRENCY_META[code];
+                const value = convertFromBase(convertToBase(account.balance, account.currency), code);
+                const activeClass = code === acctViewCurrency ? ' active' : '';
+                return `<button class="dropdown-item${activeClass}" onclick="setAcctViewCurrency('${code}')">` +
+                       `<span>${meta.flag} ${code}</span>` +
+                       `<span style="color:#71717A">${meta.symbol}${value.toFixed(1)}M</span>` +
+                       `</button>`;
+            }).join('');
+        }
+
+        // Changes how THIS account is displayed only. It doesn't touch activeCurrency (the
+        // net worth card, the account rows, and every other screen are unaffected), and it
+        // isn't saved: reopening the account, or any account, resets to that account's own currency.
+        function setAcctViewCurrency(code) {
+            acctViewCurrency = code;
+            document.getElementById('acct-curr-menu').classList.remove('open');
+            renderAccountDetail();
+        }
+
+        function renderAccountDetail() {
+            const account = ACCOUNTS.find(a => a.id === openAccountId);
+            if (!account) return;
+            const code = acctViewCurrency;
+
+            // Top card: the balance in the currency chosen for THIS account (its own by default),
+            // with the native amount shown underneath whenever a different one is picked.
+            const badge = document.getElementById('acct-badge');
+            badge.innerText = account.letter;
+            badge.style.background = account.color;
+            document.getElementById('acct-title').innerText = account.name;
+            document.getElementById('acct-name').innerText = account.name;
+            document.getElementById('acct-type').innerText = account.type + ' · ' + account.currency;
+            document.getElementById('acct-balance').innerText = formatAccountBalanceIn(account, code);
+            document.getElementById('acct-converted').innerText = code === account.currency ? '' : ('Native: ' + formatAccountBalance(account));
+            renderAcctCurrencyMenu(account);
+
+            // Balance history for this account only, valued in the chosen currency
+            const { points, clipped } = getAccountSeries(account, code, accountTimeframe);
+            document.getElementById('acct-graph-title').innerText = graphTitle('Revenue', accountTimeframe, clipped, points);
+            document.getElementById('acct-graph-note').innerText = account.currency === code
+                ? 'Shown in ' + code
+                : 'Shown in ' + code + ', using each date\'s exchange rate';
+            renderAccountTimeframes();
+            drawGraph(points, { line: 'acct-graph-line', area: 'acct-graph-area', svg: 'acct-graph-svg', labels: 'acct-graph-labels', empty: 'acct-graph-empty', pct: 'acct-graph-pct' });
+
+            // Details
+            const totalAUD = getPortfolioTotalAUD();
+            const share = totalAUD > 0 ? convertToBase(account.balance, account.currency) / totalAUD * 100 : null;
+            document.getElementById('acct-detail-type').innerText = account.type;
+            document.getElementById('acct-detail-currency').innerText = account.currency + ' ' + CURRENCY_META[account.currency].flag;
+            document.getElementById('acct-detail-share').innerText = share === null ? '—' : share.toFixed(1) + '%';
+        }
+
+        // --- Performance detail screen ---
+
+        // Statistics for a set of graph points, all computed from the data itself:
+        //  - step changes are the $ and % move between each consecutive pair of snapshots
+        //  - volatility is the standard deviation of those step % changes
+        //  - drawdown is the largest peak-to-trough decline at any point in the window
+        function computeStepStats(points) {
+            if (points.length < 2) return null;
+            const steps = [];
+            for (let i = 1; i < points.length; i++) {
+                const prev = points[i - 1], cur = points[i];
+                if (prev.value <= 0) continue;
+                steps.push({ t: cur.t, amount: cur.value - prev.value, pct: (cur.value - prev.value) / prev.value * 100 });
+            }
+            if (!steps.length) return null;
+
+            const best = steps.reduce((a, b) => (b.pct > a.pct ? b : a));
+            const worst = steps.reduce((a, b) => (b.pct < a.pct ? b : a));
+            const up = steps.filter(s => s.amount > 0).length;
+            const down = steps.filter(s => s.amount < 0).length;
+
+            const mean = steps.reduce((s, x) => s + x.pct, 0) / steps.length;
+            const variance = steps.reduce((s, x) => s + (x.pct - mean) ** 2, 0) / steps.length;
+            const volatilityPct = Math.sqrt(variance);
+
+            return { best, worst, up, down, flat: steps.length - up - down, volatilityPct };
+        }
+
+        // Largest peak-to-trough decline within the window, with the dates it ran between.
+        function computeDrawdown(points) {
+            if (points.length < 2) return null;
+            let peak = points[0], worst = null;
+            for (const p of points) {
+                if (p.value > peak.value) peak = p;
+                const drawdownPct = peak.value > 0 ? (p.value - peak.value) / peak.value * 100 : 0;
+                if (!worst || drawdownPct < worst.pct) worst = { pct: drawdownPct, peak, trough: p };
+            }
+            return worst && worst.pct < 0 ? worst : null;
+        }
+
+        // Compound annual growth rate implied by the window, using the ACTUAL elapsed time
+        // between the first and last point (records are not evenly spaced).
+        function computeAnnualized(points) {
+            if (points.length < 2) return null;
+            const first = points[0], last = points[points.length - 1];
+            const days = (last.t - first.t) / 864e5;
+            if (days < 1 || first.value <= 0) return null;
+            return (Math.pow(last.value / first.value, 365 / days) - 1) * 100;
+        }
+
+        // Each account's $ change over the window, valued in `code` at each end's own rates.
+        function computeContributions(label, code) {
+            const { records } = getRecordsInWindow(label);
+            if (records.length < 2) return [];
+            const first = records[0], last = records[records.length - 1];
+            return ACCOUNTS.map(account => {
+                const startValue = getAccountRecordValue(first, account, code);
+                const endValue = getAccountRecordValue(last, account, code);
+                if (startValue === null || endValue === null) return null;
+                return {
+                    account, startValue, endValue,
+                    delta: endValue - startValue,
+                    pct: startValue > 0 ? (endValue - startValue) / startValue * 100 : null
+                };
+            }).filter(Boolean).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+        }
+
+        function renderPerfTimeframes() {
+            const el = document.getElementById('perf-timeframes');
+            if (!el) return;
+            el.innerHTML = PERF_TIMEFRAMES.map(pair => {
+                const active = pair[1] === activeTimeframe;
+                return '<button class="interactive-btn perf-timeframe-btn" onclick="setTimeframe(\'' + pair[1] + '\')" style="' +
+                    'border: 1px solid ' + (active ? '#00FF85' : '#27272A') + '; background: ' + (active ? '#27272A' : '#18181B') + '; ' +
+                    'color: ' + (active ? '#00FF85' : '#fff') + '; font-weight: ' + (active ? '700' : '600') + ';">' + pair[0] + '</button>';
+            }).join('');
+        }
+
+        // Summary card: shows the window's start/end by default, or a scrubbed point mid-drag.
+        function renderPerfSummary(points, clipped) {
+            const meta = CURRENCY_META[activeCurrency];
+            const asOf = document.getElementById('perf-asof');
+            const total = document.getElementById('perf-total');
+            const change = document.getElementById('perf-change');
+            if (points.length < 2) {
+                asOf.innerText = '';
+                total.innerText = points.length ? meta.symbol + formatMoney(points[0].value) : '—';
+                change.innerText = 'Not enough history in this window yet';
+                change.style.color = '#71717A';
+                return;
+            }
+            const first = points[0], last = points[points.length - 1];
+            const up = last.value >= first.value;
+            asOf.innerText = graphTitle(activeTimeframe, activeTimeframe, clipped, points).replace(activeTimeframe + ' (', '').replace(')', '') || ('As of ' + formatGraphDate(last.t, true));
+            asOf.innerText = 'As of ' + formatGraphDate(last.t, true) + (clipped ? ' · since ' + formatGraphDate(first.t, false) : '');
+            total.innerText = meta.symbol + formatMoney(last.value);
+            change.style.color = up ? '#00FF85' : '#FF4D6D';
+            change.innerText = (up ? '↑ +' : '↓ −') + Math.abs((last.value - first.value) / first.value * 100).toFixed(1) + '% (' +
+                (up ? '+' : '−') + meta.symbol + formatMoney(Math.abs(last.value - first.value)) + ' ' + activeCurrency + ') over ' + activeTimeframe.toLowerCase();
+        }
+
+        // While dragging: show the value/date under the finger instead of the window summary.
+        function renderPerfScrub(points, idx) {
+            const meta = CURRENCY_META[activeCurrency];
+            const p = points[idx];
+            const first = points[0];
+            const up = p.value >= first.value;
+            document.getElementById('perf-asof').innerText = formatGraphDate(p.t, true);
+            document.getElementById('perf-total').innerText = meta.symbol + formatMoney(p.value);
+            const change = document.getElementById('perf-change');
+            change.style.color = up ? '#00FF85' : '#FF4D6D';
+            change.innerText = (up ? '↑ +' : '↓ −') + Math.abs((p.value - first.value) / first.value * 100).toFixed(1) + '% since ' + formatGraphDate(first.t, false);
+        }
+
+        function renderPerfStats(points) {
+            const meta = CURRENCY_META[activeCurrency];
+            const steps = computeStepStats(points);
+            const drawdown = computeDrawdown(points);
+            const annualized = computeAnnualized(points);
+
+            const bestV = document.getElementById('perf-best-value'), bestS = document.getElementById('perf-best-sub');
+            const worstV = document.getElementById('perf-worst-value'), worstS = document.getElementById('perf-worst-sub');
+            const volV = document.getElementById('perf-vol-value');
+            const udV = document.getElementById('perf-updown-value'), udS = document.getElementById('perf-updown-sub');
+            const annV = document.getElementById('perf-annualized-value');
+
+            if (!steps) {
+                [bestV, worstV, volV, udV, annV].forEach(el => el.innerText = '—');
+                [bestS, worstS, udS].forEach(el => el.innerText = 'Not enough snapshots yet');
+                document.getElementById('perf-drawdown-value').innerText = '—';
+                document.getElementById('perf-drawdown-sub').innerText = '';
+                return;
+            }
+
+            bestV.innerText = (steps.best.pct >= 0 ? '+' : '') + steps.best.pct.toFixed(1) + '%';
+            bestS.innerText = (steps.best.amount >= 0 ? '+' : '−') + meta.symbol + formatMoney(Math.abs(steps.best.amount)) + ' · ' + formatGraphDate(steps.best.t, true);
+            worstV.innerText = steps.worst.pct.toFixed(1) + '%';
+            worstS.innerText = (steps.worst.amount >= 0 ? '+' : '−') + meta.symbol + formatMoney(Math.abs(steps.worst.amount)) + ' · ' + formatGraphDate(steps.worst.t, true);
+            volV.innerText = '±' + steps.volatilityPct.toFixed(1) + '%';
+            udV.innerText = steps.up + ' / ' + steps.down;
+            udS.innerText = steps.flat ? steps.flat + ' unchanged' : 'across ' + (steps.up + steps.down + steps.flat) + ' snapshots';
+
+            const ddV = document.getElementById('perf-drawdown-value'), ddS = document.getElementById('perf-drawdown-sub');
+            if (drawdown) {
+                ddV.innerText = drawdown.pct.toFixed(1) + '%';
+                ddV.style.color = '#FF4D6D';
+                ddS.innerText = formatGraphDate(drawdown.peak.t, true) + ' → ' + formatGraphDate(drawdown.trough.t, true);
+            } else {
+                ddV.innerText = '0.0%';
+                ddV.style.color = '';
+                ddS.innerText = 'No decline in this window';
+            }
+
+            annV.innerText = annualized === null ? '—' : (annualized >= 0 ? '+' : '') + annualized.toFixed(1) + '%';
+            annV.style.color = annualized === null ? '' : (annualized >= 0 ? '#00FF85' : '#FF4D6D');
+        }
+
+        function perfMoverRowHTML(m) {
+            const meta = CURRENCY_META[activeCurrency];
+            const up = m.delta >= 0;
+            return '<div class="settings-row" style="cursor: pointer;" onclick="closePerformance(); openAccount(\'' + m.account.id + '\')">' +
+                '<span class="row-label">' +
+                    '<span class="row-icon" style="background: ' + m.account.color + '; color: #fff;">' + m.account.letter + '</span>' +
+                    m.account.name +
+                '</span>' +
+                '<span style="text-align: right;">' +
+                    '<div style="color: ' + (up ? '#00FF85' : '#FF4D6D') + ';">' + (up ? '+' : '−') + meta.symbol + formatMoney(Math.abs(m.delta)) + '</div>' +
+                    '<div class="row-value">' + (m.pct === null ? '—' : (up ? '+' : '') + m.pct.toFixed(1) + '%') + '</div>' +
+                '</span>' +
+            '</div>';
+        }
+
+        function renderPerfContrib() {
+            const contributions = computeContributions(activeTimeframe, activeCurrency);
+            const el = document.getElementById('perf-contrib');
+            el.innerHTML = contributions.length
+                ? contributions.map(perfMoverRowHTML).join('')
+                : '<div class="settings-row" style="cursor: default;"><span class="row-label" style="color: #71717A;">Not enough history in this window yet</span></div>';
+        }
+
+        function renderPerformanceScreen() {
+            const { points, clipped } = getHistorySeries(activeCurrency, activeTimeframe);
+            renderPerfTimeframes();
+            renderPerfSummary(points, clipped);
+            perfLayout = drawGraph(points, { line: 'perf-graph-line', area: 'perf-graph-area', svg: 'perf-graph-svg', labels: 'perf-graph-labels', empty: 'perf-graph-empty', pct: null }, { w: 320, h: 150 });
+            hidePerfScrub();
+            renderPerfStats(points);
+            renderPerfContrib();
+        }
+
+        function openPerformance() {
+            performanceOpen = true;
+            renderPerformanceScreen();
+            document.getElementById('perf-screen').classList.add('open');
+            document.getElementById('perf-content').scrollTop = 0;
+        }
+
+        function closePerformance() {
+            performanceOpen = false;
+            document.getElementById('perf-screen').classList.remove('open');
+        }
+
+        // Finds the plotted point nearest a horizontal position (0..W) within a graph's layout.
+        function nearestPointIndex(points, layout, xPos) {
+            if (!points.length) return -1;
+            const targetT = layout.t0 + (xPos / layout.W) * (layout.t1 - layout.t0);
+            let best = 0, bestDist = Infinity;
+            for (let i = 0; i < points.length; i++) {
+                const dist = Math.abs(points[i].t - targetT);
+                if (dist < bestDist) { bestDist = dist; best = i; }
+            }
+            return best;
+        }
+
+        function showPerfScrub(clientX) {
+            if (!perfLayout || perfLayout.points.length < 2) return;
+            const svg = document.getElementById('perf-graph-svg');
+            const rect = svg.getBoundingClientRect();
+            const xPos = Math.max(0, Math.min(perfLayout.W, (clientX - rect.left) / rect.width * perfLayout.W));
+            const idx = nearestPointIndex(perfLayout.points, perfLayout, xPos);
+            const p = perfLayout.points[idx];
+
+            const guide = document.getElementById('perf-guide'), dot = document.getElementById('perf-dot');
+            const x = perfLayout.xOf(p), y = perfLayout.yOf(p);
+            guide.setAttribute('x1', x); guide.setAttribute('x2', x); guide.setAttribute('opacity', '1');
+            dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('opacity', '1');
+
+            renderPerfScrub(perfLayout.points, idx);
+        }
+
+        function hidePerfScrub() {
+            const guide = document.getElementById('perf-guide'), dot = document.getElementById('perf-dot');
+            if (guide) guide.setAttribute('opacity', '0');
+            if (dot) dot.setAttribute('opacity', '0');
+            perfScrubActive = false;
+            const { points, clipped } = getHistorySeries(activeCurrency, activeTimeframe);
+            renderPerfSummary(points, clipped);
+        }
+
+        // --- Mouse hover: crosshair + tooltip (desktop). Separate from the touch-drag
+        // scrub above so a mouse doesn't need to be held down to inspect the graph. ---
+
+        // Positions the tooltip in the graph card's own coordinate space, and keeps
+        // it from spilling past the card's left/right edge.
+        function positionPerfTooltip(x, y) {
+            const svg = document.getElementById('perf-graph-svg');
+            const card = svg.parentElement;
+            const svgRect = svg.getBoundingClientRect();
+            const cardRect = card.getBoundingClientRect();
+            const tooltip = document.getElementById('perf-tooltip');
+
+            let px = (x / perfLayout.W) * svgRect.width + (svgRect.left - cardRect.left);
+            const py = (y / perfLayout.H) * svgRect.height + (svgRect.top - cardRect.top);
+            const half = tooltip.offsetWidth / 2 || 40;
+            px = Math.max(half + 4, Math.min(cardRect.width - half - 4, px));
+
+            tooltip.style.left = px + 'px';
+            tooltip.style.top = py + 'px';
+        }
+
+        function showPerfHover(clientX) {
+            if (!perfLayout || perfLayout.points.length < 2) return;
+            const svg = document.getElementById('perf-graph-svg');
+            const rect = svg.getBoundingClientRect();
+            const xPos = Math.max(0, Math.min(perfLayout.W, (clientX - rect.left) / rect.width * perfLayout.W));
+            const idx = nearestPointIndex(perfLayout.points, perfLayout, xPos);
+            const p = perfLayout.points[idx];
+            const x = perfLayout.xOf(p), y = perfLayout.yOf(p);
+
+            const guideX = document.getElementById('perf-guide');
+            guideX.setAttribute('x1', x); guideX.setAttribute('x2', x); guideX.setAttribute('opacity', '1');
+            const guideY = document.getElementById('perf-guide-y');
+            guideY.setAttribute('y1', y); guideY.setAttribute('y2', y); guideY.setAttribute('opacity', '1');
+            const dot = document.getElementById('perf-dot');
+            dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('opacity', '1');
+
+            const meta = CURRENCY_META[activeCurrency];
+            document.getElementById('perf-tooltip-date').innerText = formatGraphDate(p.t, true);
+            document.getElementById('perf-tooltip-value').innerText = meta.symbol + formatMoney(p.value);
+            document.getElementById('perf-tooltip').style.opacity = '1';
+            positionPerfTooltip(x, y);
+
+            renderPerfScrub(perfLayout.points, idx);   // keeps the summary card in sync too
+        }
+
+        function hidePerfHover() {
+            document.getElementById('perf-guide').setAttribute('opacity', '0');
+            document.getElementById('perf-guide-y').setAttribute('opacity', '0');
+            document.getElementById('perf-dot').setAttribute('opacity', '0');
+            document.getElementById('perf-tooltip').style.opacity = '0';
+            const { points, clipped } = getHistorySeries(activeCurrency, activeTimeframe);
+            renderPerfSummary(points, clipped);
+        }
+
+        function initPerfHover() {
+            const svg = document.getElementById('perf-graph-svg');
+            svg.addEventListener('mouseenter', e => showPerfHover(e.clientX));
+            svg.addEventListener('mousemove', e => showPerfHover(e.clientX));
+            svg.addEventListener('mouseleave', hidePerfHover);
+        }
+
+        // Touch/drag to inspect any point on the performance graph.
+        function initPerfScrub() {
+            const svg = document.getElementById('perf-graph-svg');
+            const clientXOf = e => (e.touches && e.touches.length ? e.touches[0].clientX : e.clientX);
+            svg.addEventListener('pointerdown', e => { perfScrubActive = true; showPerfScrub(clientXOf(e)); if (svg.setPointerCapture && e.pointerId != null) svg.setPointerCapture(e.pointerId); e.preventDefault(); });
+            svg.addEventListener('pointermove', e => { if (perfScrubActive) { showPerfScrub(clientXOf(e)); e.preventDefault(); } });
+            svg.addEventListener('pointerup', hidePerfScrub);
+            svg.addEventListener('pointercancel', hidePerfScrub);
+            svg.addEventListener('pointerleave', () => { if (perfScrubActive) hidePerfScrub(); });
+        }
+    </script>
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</body>
+</html>
+
